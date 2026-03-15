@@ -1,16 +1,39 @@
-# neurosense
+# NeuroSense
 
-A new Flutter project.
+NeuroSense is a mobile mental health tracking application that allows users to log their daily emotions and receive AI-powered mood analysis.
 
-## Getting Started
+## Features
+- Mood tracking
+- AI-based sentiment analysis
+- Mental health journaling
+- Secure log storage
+- AI therapy chatbot
 
-This project is a starting point for a Flutter application.
+## Tech Stack
 
-A few resources to get you started if this is your first Flutter project:
+Frontend
+- Flutter
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Backend
+- Node.js
+- Express.js
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Database
+- MongoDB
+
+AI
+- OpenAI API
+
+Authentication
+- Firebase Auth
+
+## Architecture
+
+Flutter App → Node.js API → MongoDB  
+                     ↓
+                OpenAI API
+
+## How to Run
+
+flutter pub get
+flutter run

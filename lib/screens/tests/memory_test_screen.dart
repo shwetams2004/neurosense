@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../storage/local_store.dart';
 import '../../passive/keyboard_tracker.dart';
 
@@ -6,10 +7,12 @@ class MemoryTestScreen extends StatefulWidget {
   const MemoryTestScreen({super.key});
 
   @override
-  State<MemoryTestScreen> createState() => _MemoryTestScreenState();
+  State<MemoryTestScreen> createState() =>
+      _MemoryTestScreenState();
 }
 
-class _MemoryTestScreenState extends State<MemoryTestScreen> {
+class _MemoryTestScreenState
+    extends State<MemoryTestScreen> {
   final List<String> words = const [
     "Apple",
     "River",
@@ -19,7 +22,10 @@ class _MemoryTestScreenState extends State<MemoryTestScreen> {
   ];
 
   bool showingWords = true;
-  final TextEditingController recallController = TextEditingController();
+
+  final TextEditingController recallController =
+      TextEditingController();
+
   String _previousText = "";
 
   @override
@@ -30,7 +36,9 @@ class _MemoryTestScreenState extends State<MemoryTestScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: showingWords ? _learningPhase() : _recallPhase(),
+        child: showingWords
+            ? _learningPhase()
+            : _recallPhase(),
       ),
     );
   }
@@ -47,11 +55,15 @@ class _MemoryTestScreenState extends State<MemoryTestScreen> {
           style: TextStyle(fontSize: 20),
           textAlign: TextAlign.center,
         ),
+
         const SizedBox(height: 24),
 
         ...words.map(
           (w) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding:
+                const EdgeInsets.symmetric(
+              vertical: 6,
+            ),
             child: Text(
               w,
               style: const TextStyle(
@@ -85,25 +97,29 @@ class _MemoryTestScreenState extends State<MemoryTestScreen> {
 
   Widget _recallPhase() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
       children: [
         const Text(
           "Please type the words you remember.\n"
           "(Any order, separated by spaces)",
           style: TextStyle(fontSize: 18),
         ),
+
         const SizedBox(height: 20),
 
         TextField(
           controller: recallController,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            hintText: "Type remembered words here",
+            hintText:
+                "Type remembered words here",
           ),
           maxLines: 3,
           onChanged: (value) {
-            // Detect backspace vs normal key press
-            final isBackspace = value.length < _previousText.length;
+            final isBackspace =
+                value.length <
+                    _previousText.length;
 
             KeyboardTracker.onKeyPress(
               isBackspace: isBackspace,
@@ -119,22 +135,65 @@ class _MemoryTestScreenState extends State<MemoryTestScreen> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () async {
-              final input = recallController.text.toLowerCase();
-              final recalledWords = input.split(RegExp(r'\s+'));
+              final currentUser =
+                  await LocalStore
+                      .getCurrentUser();
+
+              if (currentUser == null) {
+                return;
+              }
+
+              final input = recallController.text
+                  .toLowerCase();
+
+              final recalledWords =
+                  input.split(
+                RegExp(r'\s+'),
+              );
 
               int score = 0;
+
               for (final word in words) {
-                if (recalledWords.contains(word.toLowerCase())) {
+                if (recalledWords.contains(
+                  word.toLowerCase(),
+                )) {
                   score++;
                 }
               }
 
-              // Save memory score
-              await LocalStore.saveMemoryScore(score);
+              // =========================
+              // SAVE USER-SPECIFIC SCORE
+              // =========================
 
-              // Flush & save keyboard passive metrics
-              final metrics = KeyboardTracker.exportDailyMetrics();
-              await LocalStore.saveKeyboardMetrics(metrics);
+              await LocalStore
+                  .saveMemoryScore(
+                currentUser,
+                score,
+              );
+
+              // =========================
+              // PASSIVE KEYBOARD METRICS
+              // =========================
+
+              final metrics =
+                  KeyboardTracker
+                      .exportDailyMetrics();
+
+              await LocalStore
+                  .saveKeyboardMetrics(
+                metrics,
+              );
+
+              if (mounted) {
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      "Memory score saved for current user.\nScore: $score/${words.length}",
+                    ),
+                  ),
+                );
+              }
 
               Navigator.pop(context);
             },

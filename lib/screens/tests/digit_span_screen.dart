@@ -1,22 +1,33 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+
 import '../../storage/local_store.dart';
 
 class DigitSpanScreen extends StatefulWidget {
   const DigitSpanScreen({super.key});
 
   @override
-  State<DigitSpanScreen> createState() => _DigitSpanScreenState();
+  State<DigitSpanScreen> createState() =>
+      _DigitSpanScreenState();
 }
 
-class _DigitSpanScreenState extends State<DigitSpanScreen> {
+class _DigitSpanScreenState
+    extends State<DigitSpanScreen> {
   final Random _random = Random();
-  final TextEditingController inputController = TextEditingController();
+
+  final TextEditingController
+      inputController =
+      TextEditingController();
 
   List<int> currentDigits = [];
+
   int currentSpan = 3;
+
   bool showingDigits = true;
+
   bool testFinished = false;
+
   int maxSpanAchieved = 0;
 
   @override
@@ -26,53 +37,102 @@ class _DigitSpanScreenState extends State<DigitSpanScreen> {
   }
 
   void generateDigits() {
-    currentDigits =
-        List.generate(currentSpan, (_) => _random.nextInt(9) + 1);
+    currentDigits = List.generate(
+      currentSpan,
+      (_) => _random.nextInt(9) + 1,
+    );
+
     showingDigits = true;
+
     inputController.clear();
 
-    Future.delayed(const Duration(seconds: 3), () {
-      setState(() {
-        showingDigits = false;
-      });
-    });
+    Future.delayed(
+      const Duration(seconds: 3),
+      () {
+        if (!mounted) return;
+
+        setState(() {
+          showingDigits = false;
+        });
+      },
+    );
   }
 
   void submitAnswer() async {
-    final userInput = inputController.text.replaceAll(" ", "");
-    final correct = currentDigits.join("");
+    final currentUser =
+        await LocalStore.getCurrentUser();
+
+    if (currentUser == null) {
+      return;
+    }
+
+    final userInput =
+        inputController.text
+            .replaceAll(" ", "");
+
+    final correct =
+        currentDigits.join("");
 
     if (userInput == correct) {
-      maxSpanAchieved = currentSpan;
+      maxSpanAchieved =
+          currentSpan;
+
       currentSpan++;
+
       generateDigits();
     } else {
       testFinished = true;
-      await LocalStore.saveDigitSpanScore(maxSpanAchieved);
+
+      // =========================
+      // SAVE USER-SPECIFIC SCORE
+      // =========================
+
+      await LocalStore
+          .saveDigitSpanScore(
+        currentUser,
+        maxSpanAchieved,
+      );
+
       setState(() {});
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Digit Span Activity")),
+      appBar: AppBar(
+        title: const Text(
+          "Digit Span Activity",
+        ),
+      ),
+
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: testFinished ? _resultView() : _testView(),
+        padding:
+            const EdgeInsets.all(24),
+
+        child: testFinished
+            ? _resultView()
+            : _testView(),
       ),
     );
   }
 
   Widget _testView() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment:
+          CrossAxisAlignment.center,
+
       children: [
         const Text(
           "Remember the numbers in the same order.",
-          style: TextStyle(fontSize: 18),
-          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 18,
+          ),
+          textAlign:
+              TextAlign.center,
         ),
+
         const SizedBox(height: 24),
 
         if (showingDigits)
@@ -80,16 +140,25 @@ class _DigitSpanScreenState extends State<DigitSpanScreen> {
             currentDigits.join(" "),
             style: const TextStyle(
               fontSize: 28,
-              fontWeight: FontWeight.bold,
+              fontWeight:
+                  FontWeight.bold,
             ),
           )
         else
           TextField(
-            controller: inputController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: "Enter numbers",
+            controller:
+                inputController,
+
+            keyboardType:
+                TextInputType.number,
+
+            decoration:
+                const InputDecoration(
+              border:
+                  OutlineInputBorder(),
+
+              hintText:
+                  "Enter numbers",
             ),
           ),
 
@@ -97,10 +166,18 @@ class _DigitSpanScreenState extends State<DigitSpanScreen> {
 
         if (!showingDigits)
           SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: submitAnswer,
-              child: const Text("Submit"),
+            width:
+                double.infinity,
+
+            child:
+                ElevatedButton(
+              onPressed:
+                  submitAnswer,
+
+              child:
+                  const Text(
+                "Submit",
+              ),
             ),
           ),
       ],
@@ -109,24 +186,48 @@ class _DigitSpanScreenState extends State<DigitSpanScreen> {
 
   Widget _resultView() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment:
+          MainAxisAlignment.center,
+
       children: [
-        const Icon(Icons.check_circle, size: 64, color: Colors.green),
+        const Icon(
+          Icons.check_circle,
+          size: 64,
+          color: Colors.green,
+        ),
+
         const SizedBox(height: 24),
+
         const Text(
           "Activity completed",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight:
+                FontWeight.bold,
+          ),
         ),
+
         const SizedBox(height: 16),
+
         const Text(
           "Your responses have been recorded.",
-          style: TextStyle(fontSize: 16),
-          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+          ),
+          textAlign:
+              TextAlign.center,
         ),
+
         const SizedBox(height: 32),
+
         ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Return to Home"),
+          onPressed: () =>
+              Navigator.pop(
+                  context),
+
+          child: const Text(
+            "Return to Home",
+          ),
         ),
       ],
     );

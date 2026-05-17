@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'profile_screen.dart';
+
+import 'user_selection_screen.dart';
 
 class ConsentScreen extends StatelessWidget {
   const ConsentScreen({super.key});
@@ -23,18 +24,23 @@ class ConsentScreen extends StatelessWidget {
               "Data will be stored securely and shared only with your permission.",
               style: TextStyle(fontSize: 18),
             ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const ProfileScreen(),
-    ),
-  );
-},
 
-              child: const Text("I Understand"),
+            const Spacer(),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const UserSelectionScreen(),
+                    ),
+                  );
+                },
+                child: const Text("I Understand"),
+              ),
             ),
           ],
         ),

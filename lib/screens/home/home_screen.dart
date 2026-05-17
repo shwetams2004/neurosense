@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../storage/local_store.dart';
 
 // Tests
@@ -16,20 +20,62 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() =>
+      _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   int weeksCompleted = 0;
 
+  String currentUserName = "";
+  String currentUserId = "";
+
   @override
   void initState() {
     super.initState();
+    loadCurrentUser();
+  }
+
+  Future<void> loadCurrentUser() async {
+    final userId =
+        await LocalStore.getCurrentUser();
+
+    if (userId == null) return;
+
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final storedUsers =
+        prefs.getStringList("user_profiles") ??
+            [];
+
+    final users = storedUsers
+        .map((e) =>
+            jsonDecode(e) as Map<String, dynamic>)
+        .toList();
+
+    final currentUser = users.firstWhere(
+      (u) => u["userId"] == userId,
+      orElse: () => {},
+    );
+
+    setState(() {
+      currentUserId = userId;
+      currentUserName =
+          currentUser["name"] ?? "User";
+    });
+
     loadStatus();
   }
 
   Future<void> loadStatus() async {
-    final count = await LocalStore.getWeekCount();
+    if (currentUserId.isEmpty) return;
+
+    final count =
+        await LocalStore.getWeekCount(
+      currentUserId,
+    );
+
     setState(() {
       weeksCompleted = count;
     });
@@ -46,18 +92,36 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final displayWeek =
-        weeksCompleted < 4 ? weeksCompleted + 1 : weeksCompleted;
+        weeksCompleted < 4
+            ? weeksCompleted + 1
+            : weeksCompleted;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("NeuroSense")),
+      appBar: AppBar(
+        title: const Text("NeuroSense"),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
           children: [
+            Text(
+              "Current User: $currentUserName",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             const Text(
               "Weekly Cognitive Activities",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 8),
@@ -73,53 +137,91 @@ class _HomeScreenState extends State<HomeScreen> {
             // =========================
             // COGNITIVE TESTS
             // =========================
+
             const Text(
               "Cognitive Tests",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 12),
 
-            _navButton(context, "Memory (Word Recall)", MemoryTestScreen()),
-            _navButton(context, "Attention (Digit Span)", DigitSpanScreen()),
             _navButton(
-                context, "Executive Function (Sequencing)", TrailMakingScreen()),
-            _navButton(context, "Visuospatial Task", VisuospatialTaskScreen()),
+              context,
+              "Memory (Word Recall)",
+              MemoryTestScreen(),
+            ),
+
+            _navButton(
+              context,
+              "Attention (Digit Span)",
+              DigitSpanScreen(),
+            ),
+
+            _navButton(
+              context,
+              "Executive Function (Sequencing)",
+              TrailMakingScreen(),
+            ),
+
+            _navButton(
+              context,
+              "Visuospatial Task",
+              VisuospatialTaskScreen(),
+            ),
 
             const SizedBox(height: 20),
 
             // =========================
             // ATTENTION & PROCESSING
             // =========================
+
             const Text(
               "Attention & Processing",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
 
             const SizedBox(height: 12),
 
             _navButton(
-                context, "Sustained Attention (Vigilance)", VigilanceTestScreen()),
-            _navButton(context, "Mental Calculation (Serial Subtraction)",
-                SerialSubtractionScreen()),
+              context,
+              "Sustained Attention (Vigilance)",
+              VigilanceTestScreen(),
+            ),
+
+            _navButton(
+              context,
+              "Mental Calculation (Serial Subtraction)",
+              SerialSubtractionScreen(),
+            ),
 
             const SizedBox(height: 20),
 
             // =========================
             // DEMO MODE
             // =========================
+
             OutlinedButton.icon(
               icon: const Icon(Icons.science),
-              label: const Text("Enable Demo Mode (Sample Data)"),
+              label: const Text(
+                "Enable Demo Mode (Sample Data)",
+              ),
               onPressed: () async {
                 await LocalStore.injectDemoData();
+
                 await loadStatus();
 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(
                     const SnackBar(
                       content: Text(
-                        "Demo data loaded. Clinician summary unlocked.",
+                        "Demo data loaded.",
                       ),
                     ),
                   );
@@ -132,20 +234,30 @@ class _HomeScreenState extends State<HomeScreen> {
             // =========================
             // INSIGHT CARD
             // =========================
+
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.indigo.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.indigo
+                    .withOpacity(0.05),
+                borderRadius:
+                    BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.indigo),
+                  const Icon(
+                    Icons.info_outline,
+                    color: Colors.indigo,
+                  ),
+
                   const SizedBox(width: 12),
+
                   Expanded(
                     child: Text(
                       insightText(),
-                      style: const TextStyle(fontSize: 16),
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],
@@ -157,16 +269,20 @@ class _HomeScreenState extends State<HomeScreen> {
             // =========================
             // CLINICIAN SUMMARY
             // =========================
+
             TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const ClinicianSummaryScreen(),
+                    builder: (_) =>
+                        const ClinicianSummaryScreen(),
                   ),
                 );
               },
-              child: const Text("View Clinician Summary"),
+              child: const Text(
+                "View Clinician Summary",
+              ),
             ),
 
             const SizedBox(height: 8),
@@ -175,7 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
               weeksCompleted < 4
                   ? "Status: Establishing baseline (Week $displayWeek of 4)"
                   : "Baseline established. Ongoing tracking enabled.",
-              style: const TextStyle(color: Colors.grey),
+              style:
+                  const TextStyle(color: Colors.grey),
             ),
           ],
         ),
@@ -183,9 +300,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _navButton(BuildContext context, String label, Widget screen) {
+  Widget _navButton(
+    BuildContext context,
+    String label,
+    Widget screen,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding:
+          const EdgeInsets.only(bottom: 10),
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton(
@@ -193,8 +315,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => screen),
+              MaterialPageRoute(
+                builder: (_) => screen,
+              ),
             );
+
             loadStatus();
           },
         ),

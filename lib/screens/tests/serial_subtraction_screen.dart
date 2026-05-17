@@ -1,28 +1,42 @@
 import 'package:flutter/material.dart';
+
 import '../../storage/local_store.dart';
 
-class SerialSubtractionScreen extends StatefulWidget {
-  const SerialSubtractionScreen({super.key});
+class SerialSubtractionScreen
+    extends StatefulWidget {
+  const SerialSubtractionScreen({
+    super.key,
+  });
 
   @override
-  State<SerialSubtractionScreen> createState() =>
-      _SerialSubtractionScreenState();
+  State<SerialSubtractionScreen>
+      createState() =>
+          _SerialSubtractionScreenState();
 }
 
 class _SerialSubtractionScreenState
-    extends State<SerialSubtractionScreen> {
+    extends State<
+        SerialSubtractionScreen> {
   int current = 100;
+
   int correct = 0;
+
   int errors = 0;
-  final TextEditingController controller =
+
+  final TextEditingController
+      controller =
       TextEditingController();
 
   void submit() {
-    final input = int.tryParse(controller.text);
+    final input = int.tryParse(
+      controller.text,
+    );
+
     if (input == null) return;
 
     if (input == current - 7) {
       correct++;
+
       current = input;
     } else {
       errors++;
@@ -33,40 +47,118 @@ class _SerialSubtractionScreenState
     if (correct + errors >= 5) {
       finish();
     }
+
+    setState(() {});
   }
 
   Future<void> finish() async {
-    await LocalStore.saveSerialSubtractionResult(
+    final currentUser =
+        await LocalStore
+            .getCurrentUser();
+
+    if (currentUser == null) {
+      return;
+    }
+
+    // =========================
+    // SAVE USER-SPECIFIC RESULT
+    // =========================
+
+    await LocalStore
+        .saveSerialSubtractionResult(
+      userId: currentUser,
       correct: correct,
       errors: errors,
     );
 
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      ScaffoldMessenger.of(
+              context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            "Calculation activity saved.\nCorrect: $correct | Errors: $errors",
+          ),
+        ),
+      );
+    }
+
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Mental Calculation")),
+      appBar: AppBar(
+        title: const Text(
+          "Mental Calculation",
+        ),
+      ),
+
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding:
+            const EdgeInsets.all(24),
+
         child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
           children: [
             Text(
               "Starting from $current, subtract 7 each time",
-              style: const TextStyle(fontSize: 18),
+              style: const TextStyle(
+                fontSize: 18,
+              ),
             ),
-            const SizedBox(height: 24),
+
+            const SizedBox(
+                height: 24),
+
             TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
+              controller:
+                  controller,
+
+              keyboardType:
+                  TextInputType.number,
+
               decoration:
-                  const InputDecoration(labelText: "Your answer"),
+                  const InputDecoration(
+                labelText:
+                    "Your answer",
+
+                border:
+                    OutlineInputBorder(),
+              ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: submit,
-              child: const Text("Submit"),
+
+            const SizedBox(
+                height: 20),
+
+            Text(
+              "Correct: $correct | Errors: $errors",
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+
+            const Spacer(),
+
+            SizedBox(
+              width:
+                  double.infinity,
+
+              child:
+                  ElevatedButton(
+                onPressed: submit,
+
+                child: const Text(
+                  "Submit",
+                ),
+              ),
             ),
           ],
         ),

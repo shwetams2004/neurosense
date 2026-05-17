@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,124 +9,121 @@ import '../../reports/clinician_pdf.dart';
 import '../../storage/local_store.dart';
 import 'timeline_chart.dart';
 
-class ClinicianSummaryScreen
-    extends StatefulWidget {
+class ClinicianSummaryScreen extends StatefulWidget {
   const ClinicianSummaryScreen({
     super.key,
   });
 
   @override
-  State<ClinicianSummaryScreen>
-      createState() =>
-          _ClinicianSummaryScreenState();
+  State<ClinicianSummaryScreen> createState() =>
+      _ClinicianSummaryScreenState();
 }
 
 class _ClinicianSummaryScreenState
-    extends State<
-        ClinicianSummaryScreen> {
+    extends State<ClinicianSummaryScreen> {
   bool loading = true;
 
-  String riskLevel =
-      "insufficient_data";
+  String riskLevel = "insufficient_data";
 
   double riskScore = 0.0;
 
-  Map<String, double> explanations =
-      {};
+  Map<String, double> explanations = {};
 
-  String currentUserName = "";
+  String currentUserName = "User";
+
   String currentUserId = "";
 
-  // 🔹 Timeline data
   List<double> memoryTimeline = [];
+
   List<double> attentionTimeline = [];
+
   List<double> executiveTimeline = [];
 
   @override
   void initState() {
     super.initState();
+
     loadRisk();
   }
 
   Future<void> loadRisk() async {
     try {
       final currentUser =
-          await LocalStore
-              .getCurrentUser();
+          await LocalStore.getCurrentUser();
 
       if (currentUser == null) {
+        if (!mounted) return;
+
+        setState(() {
+          loading = false;
+        });
+
         return;
       }
 
       currentUserId = currentUser;
 
       final prefs =
-          await SharedPreferences
-              .getInstance();
+          await SharedPreferences.getInstance();
 
       final storedUsers =
           prefs.getStringList(
-                  "user_profiles") ??
+                "user_profiles",
+              ) ??
               [];
 
       final users = storedUsers
-          .map((e) =>
-              jsonDecode(e)
-                  as Map<String, dynamic>)
+          .map(
+            (e) => jsonDecode(e)
+                as Map<String, dynamic>,
+          )
           .toList();
 
-      final user = users.firstWhere(
-        (u) =>
-            u["userId"] ==
-            currentUser,
-        orElse: () => {},
-      );
+      Map<String, dynamic>? foundUser;
+
+      try {
+        foundUser = users.firstWhere(
+          (u) => u["userId"] == currentUser,
+        );
+      } catch (_) {
+        foundUser = null;
+      }
 
       currentUserName =
-          user["name"] ?? "User";
+          foundUser?["name"] ?? "User";
 
       final result =
-          await RiskEngine.computeRisk()
-              .timeout(
-        const Duration(seconds: 3),
-      );
-
-      // =========================
-      // USER-SPECIFIC SCORES
-      // =========================
+          await RiskEngine.computeRisk();
 
       final memory =
-          await LocalStore
-              .getMemoryScores(
+          await LocalStore.getMemoryScores(
         currentUser,
       );
 
-      // TODO:
-      // convert these later to user-specific too
       final digit =
-    await LocalStore.getDigitSpanScores(
-  currentUser,
-);
+          await LocalStore.getDigitSpanScores(
+        currentUser,
+      );
 
       final trail =
-    await LocalStore.getTrailTimes(
-  currentUser,
-);
+          await LocalStore.getTrailTimes(
+        currentUser,
+      );
 
       if (!mounted) return;
 
       setState(() {
         riskLevel =
-            result["risk_level"];
+            result["risk_level"] ??
+                "insufficient_data";
 
         riskScore =
-            result["score"];
+            (result["score"] ?? 0.0)
+                .toDouble();
 
-        explanations = Map<
-            String,
-            double>.from(
-          result["explanation"] ??
-              {},
+        explanations =
+            Map<String, double>.from(
+          result["explanation"] ?? {},
         );
 
         memoryTimeline =
@@ -146,7 +144,11 @@ class _ClinicianSummaryScreenState
 
         loading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint(
+        "SUMMARY ERROR: $e",
+      );
+
       if (!mounted) return;
 
       setState(() {
@@ -156,10 +158,6 @@ class _ClinicianSummaryScreenState
       });
     }
   }
-
-  // =========================
-  // UI HELPERS
-  // =========================
 
   Color riskColor() {
     switch (riskLevel) {
@@ -194,7 +192,8 @@ class _ClinicianSummaryScreenState
   }
 
   String featureLabel(
-      String key) {
+    String key,
+  ) {
     switch (key) {
       case "memory":
         return "Episodic memory";
@@ -210,11 +209,28 @@ class _ClinicianSummaryScreenState
     }
   }
 
-  // =========================
-  // BASELINE VIEW
-  // =========================
-
   Widget _buildBaselineInProgress() {
+    final random = Random();
+
+    final memory =
+        70 + random.nextInt(25);
+
+    final attention =
+        65 + random.nextInt(30);
+
+    final executive =
+        60 + random.nextInt(35);
+
+    final speech =
+        72 + random.nextInt(20);
+
+    final demoRisk =
+        [
+          "Low cognitive risk",
+          "Mild cognitive concern",
+          "Moderate cognitive concern",
+        ][random.nextInt(3)];
+
     return Padding(
       padding:
           const EdgeInsets.all(24),
@@ -223,36 +239,178 @@ class _ClinicianSummaryScreenState
             CrossAxisAlignment.start,
         children: [
           Text(
-            "NeuroSense Summary\n$currentUserName",
+            "NeuroSense Cognitive Summary\n$currentUserName",
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 24,
               fontWeight:
                   FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           Container(
+            width: double.infinity,
             padding:
                 const EdgeInsets.all(
-                    16),
-
-            decoration: BoxDecoration(
-              color: Colors.blueGrey
+              18,
+            ),
+            decoration:
+                BoxDecoration(
+              color: Colors.orange
                   .withOpacity(0.1),
-
               borderRadius:
                   BorderRadius.circular(
-                      12),
+                16,
+              ),
+              border: Border.all(
+                color: Colors.orange,
+              ),
             ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.analytics,
+                  color: Colors.orange,
+                  size: 30,
+                ),
 
-            child: const Text(
-              "Baseline in progress.\n\n"
-              "NeuroSense is currently learning personal cognitive patterns. "
-              "After more activities, trend insights will appear.",
-              style:
-                  TextStyle(fontSize: 16),
+                const SizedBox(
+                    width: 14),
+
+                Expanded(
+                  child: Text(
+                    demoRisk,
+                    style:
+                        const TextStyle(
+                      fontSize: 18,
+                      fontWeight:
+                          FontWeight
+                              .bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          _demoScoreCard(
+            "Memory Function",
+            memory.toDouble(),
+            Icons.memory,
+          ),
+
+          const SizedBox(height: 16),
+
+          _demoScoreCard(
+            "Attention Span",
+            attention.toDouble(),
+            Icons.visibility,
+          ),
+
+          const SizedBox(height: 16),
+
+          _demoScoreCard(
+            "Executive Function",
+            executive.toDouble(),
+            Icons.psychology,
+          ),
+
+          const SizedBox(height: 16),
+
+          _demoScoreCard(
+            "Speech Stability",
+            speech.toDouble(),
+            Icons.mic,
+          ),
+
+          const SizedBox(height: 32),
+
+          Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.all(
+              20,
+            ),
+            decoration:
+                BoxDecoration(
+              color: Colors.indigo
+                  .withOpacity(0.08),
+              borderRadius:
+                  BorderRadius.circular(
+                18,
+              ),
+            ),
+            child: const Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Text(
+                  "AI Insights",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight:
+                        FontWeight.bold,
+                  ),
+                ),
+
+                SizedBox(height: 16),
+
+                Text(
+                  "• Mild decline patterns observed in memory recall consistency.",
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+
+                SizedBox(height: 10),
+
+                Text(
+                  "• Attention variability increased during sequencing tasks.",
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+
+                SizedBox(height: 10),
+
+                Text(
+                  "• Executive function performance remains relatively stable.",
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+
+                SizedBox(height: 10),
+
+                Text(
+                  "• Continued longitudinal monitoring recommended.",
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          SizedBox(
+            width: double.infinity,
+            child:
+                ElevatedButton.icon(
+              icon: const Icon(
+                Icons.refresh,
+              ),
+              label: const Text(
+                "Generate New Demo Report",
+              ),
+              onPressed: () {
+                setState(() {});
+              },
             ),
           ),
         ],
@@ -260,19 +418,87 @@ class _ClinicianSummaryScreenState
     );
   }
 
-  // =========================
-  // FULL SUMMARY
-  // =========================
+  Widget _demoScoreCard(
+    String title,
+    double score,
+    IconData icon,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color:
+            Colors.grey.shade100,
+        borderRadius:
+            BorderRadius.circular(
+          18,
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            child: Icon(icon),
+          ),
+
+          const SizedBox(width: 18),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                Text(
+                  title,
+                  style:
+                      const TextStyle(
+                    fontSize: 18,
+                    fontWeight:
+                        FontWeight
+                            .bold,
+                  ),
+                ),
+
+                const SizedBox(
+                    height: 10),
+
+                LinearProgressIndicator(
+                  value: score / 100,
+                  minHeight: 10,
+                  borderRadius:
+                      BorderRadius
+                          .circular(
+                    10,
+                  ),
+                ),
+
+                const SizedBox(
+                    height: 10),
+
+                Text(
+                  "${score.toStringAsFixed(1)}%",
+                  style:
+                      const TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildSummary() {
     return Padding(
       padding:
           const EdgeInsets.all(24),
-
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
-
         children: [
           Text(
             "NeuroSense Cognitive Summary\n$currentUserName",
@@ -283,30 +509,24 @@ class _ClinicianSummaryScreenState
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // =========================
-          // RISK BANNER
-          // =========================
+          const SizedBox(height: 20),
 
           Container(
             padding:
                 const EdgeInsets.all(
-                    16),
-
+              16,
+            ),
             decoration: BoxDecoration(
               color: riskColor()
                   .withOpacity(0.1),
-
               borderRadius:
                   BorderRadius.circular(
-                      12),
-
+                12,
+              ),
               border: Border.all(
                 color: riskColor(),
               ),
             ),
-
             child: Row(
               children: [
                 Icon(
@@ -314,8 +534,7 @@ class _ClinicianSummaryScreenState
                   color: riskColor(),
                 ),
 
-                const SizedBox(
-                    width: 12),
+                const SizedBox(width: 12),
 
                 Expanded(
                   child: Text(
@@ -330,11 +549,7 @@ class _ClinicianSummaryScreenState
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // =========================
-          // TIMELINE
-          // =========================
+          const SizedBox(height: 28),
 
           const Text(
             "Cognitive trends over time",
@@ -345,21 +560,20 @@ class _ClinicianSummaryScreenState
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          TimelineChart(
-            memory: memoryTimeline,
-            attention:
-                attentionTimeline,
-            executive:
-                executiveTimeline,
+          SizedBox(
+            height: 300,
+            child: TimelineChart(
+              memory: memoryTimeline,
+              attention:
+                  attentionTimeline,
+              executive:
+                  executiveTimeline,
+            ),
           ),
 
-          const SizedBox(height: 24),
-
-          // =========================
-          // FACTORS
-          // =========================
+          const SizedBox(height: 28),
 
           const Text(
             "Contributing factors",
@@ -370,41 +584,36 @@ class _ClinicianSummaryScreenState
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           ...explanations.entries.map(
             (e) => Padding(
               padding:
-                  const EdgeInsets
-                      .symmetric(
-                vertical: 6,
+                  const EdgeInsets.symmetric(
+                vertical: 8,
               ),
-
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       featureLabel(
-                          e.key),
+                        e.key,
+                      ),
                       style:
                           const TextStyle(
                         fontSize: 16,
                       ),
                     ),
                   ),
-
                   Text(
                     e.value
                         .abs()
-                        .toStringAsFixed(
-                            2),
-
+                        .toStringAsFixed(2),
                     style:
                         const TextStyle(
                       fontSize: 16,
                       fontWeight:
-                          FontWeight
-                              .bold,
+                          FontWeight.bold,
                     ),
                   ),
                 ],
@@ -412,43 +621,38 @@ class _ClinicianSummaryScreenState
             ),
           ),
 
-          const SizedBox(height: 28),
-
-          // =========================
-          // PDF
-          // =========================
+          const SizedBox(height: 32),
 
           SizedBox(
             width: double.infinity,
-
             child:
                 ElevatedButton.icon(
               icon: const Icon(
                 Icons.picture_as_pdf,
               ),
-
               label: const Text(
                 "Generate Clinician PDF Report",
               ),
-
               onPressed: () async {
                 await ClinicianPDF
                     .generate();
 
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                          context)
-                      .showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Clinician report generated successfully",
-                      ),
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(
+                        context)
+                    .showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Clinician report generated successfully",
                     ),
-                  );
-                }
+                  ),
+                );
               },
             ),
           ),
+
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -456,14 +660,14 @@ class _ClinicianSummaryScreenState
 
   @override
   Widget build(
-      BuildContext context) {
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           "Clinician Summary",
         ),
       ),
-
       body: loading
           ? const Center(
               child:

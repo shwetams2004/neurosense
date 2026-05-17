@@ -11,9 +11,8 @@ class TrailMakingScreen extends StatefulWidget {
   });
 
   @override
-  State<TrailMakingScreen>
-      createState() =>
-          _TrailMakingScreenState();
+  State<TrailMakingScreen> createState() =>
+      _TrailMakingScreenState();
 }
 
 class _TrailMakingScreenState
@@ -37,6 +36,8 @@ class _TrailMakingScreenState
 
   bool completed = false;
 
+  bool saving = false;
+
   @override
   void initState() {
     super.initState();
@@ -53,9 +54,7 @@ class _TrailMakingScreenState
 
         setState(() {
           elapsedSeconds =
-              stopwatch
-                  .elapsed
-                  .inSeconds;
+              stopwatch.elapsed.inSeconds;
         });
       },
     );
@@ -70,45 +69,63 @@ class _TrailMakingScreenState
     super.dispose();
   }
 
-  void onNodeTap(
-      int value) async {
-    if (completed) return;
-
-    final currentUser =
-        await LocalStore
-            .getCurrentUser();
-
-    if (currentUser == null) {
-      return;
-    }
+  Future<void> onNodeTap(
+    int value,
+  ) async {
+    if (completed || saving) return;
 
     if (value == currentTarget) {
+      // =========================
+      // LAST NODE
+      // =========================
+
       if (currentTarget ==
           totalNodes) {
-        completed = true;
+        setState(() {
+          completed = true;
+          saving = true;
+        });
 
         stopwatch.stop();
 
         timer?.cancel();
 
-        // =========================
-        // SAVE USER-SPECIFIC RESULT
-        // =========================
+        final currentUser =
+            await LocalStore
+                .getCurrentUser();
 
-        await LocalStore
-            .saveTrailMakingResult(
-          currentUser,
-          elapsedSeconds,
-          mistakes,
-        );
+        if (currentUser != null) {
+          await LocalStore
+              .saveTrailMakingResult(
+            currentUser,
+            elapsedSeconds,
+            mistakes,
+          );
+        }
 
-        setState(() {});
-      } else {
+        if (!mounted) return;
+
+        setState(() {
+          saving = false;
+        });
+      }
+
+      // =========================
+      // NEXT NODE
+      // =========================
+
+      else {
         setState(() {
           currentTarget++;
         });
       }
-    } else {
+    }
+
+    // =========================
+    // WRONG TAP
+    // =========================
+
+    else {
       setState(() {
         mistakes++;
       });
@@ -117,66 +134,89 @@ class _TrailMakingScreenState
 
   @override
   Widget build(
-      BuildContext context) {
+    BuildContext context,
+  ) {
     return Scaffold(
+      resizeToAvoidBottomInset:
+          true,
       appBar: AppBar(
         title: const Text(
           "Sequencing Activity",
         ),
       ),
-
-      body: Padding(
-        padding:
-            const EdgeInsets.all(24),
-
-        child: completed
-            ? _resultView()
-            : _testView(),
+      body: SafeArea(
+        child: Padding(
+          padding:
+              const EdgeInsets.all(
+            20,
+          ),
+          child: completed
+              ? _resultView()
+              : _testView(),
+        ),
       ),
     );
   }
 
   Widget _testView() {
-    return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
 
-      children: [
-        const Text(
-          "Tap the numbers in order, starting from 1.",
-          style: TextStyle(
-            fontSize: 18,
+          const Text(
+            "Tap the numbers in order, starting from 1.",
+            style: TextStyle(
+              fontSize: 18,
+            ),
           ),
-        ),
 
-        const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-        Text(
-          "Time: $elapsedSeconds s   |   Mistakes: $mistakes",
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
+          Text(
+            "Time: $elapsedSeconds s   |   Mistakes: $mistakes",
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
           ),
-        ),
 
-        const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: 4,
-
-            crossAxisSpacing: 12,
-
-            mainAxisSpacing: 12,
-
-            children: nodes
-                .map(
-                  (n) => _node(n),
-                )
-                .toList(),
+          Center(
+            child: ConstrainedBox(
+              constraints:
+                  const BoxConstraints(
+                maxWidth: 620,
+              ),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics:
+                    const NeverScrollableScrollPhysics(),
+                itemCount:
+                    nodes.length,
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 1,
+                ),
+                itemBuilder:
+                    (context, index) {
+                  return _node(
+                    nodes[index],
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-      ],
+
+          const SizedBox(height: 40),
+        ],
+      ),
     );
   }
 
@@ -184,33 +224,66 @@ class _TrailMakingScreenState
     final bool completedNode =
         number < currentTarget;
 
-    return GestureDetector(
-      onTap: () =>
-          onNodeTap(number),
+    final bool activeNode =
+        number == currentTarget;
 
-      child: Container(
-        alignment:
-            Alignment.center,
-
-        decoration: BoxDecoration(
-          color: completedNode
-              ? Colors.green
-                  .withOpacity(0.6)
-              : Colors.indigo
-                  .withOpacity(0.15),
-
-          borderRadius:
-              BorderRadius.circular(
-                  12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius:
+            BorderRadius.circular(
+          18,
         ),
-
-        child: Text(
-          number.toString(),
-
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight:
-                FontWeight.bold,
+        onTap: () async {
+          await onNodeTap(
+            number,
+          );
+        },
+        child: AnimatedContainer(
+          duration:
+              const Duration(
+            milliseconds: 200,
+          ),
+          alignment:
+              Alignment.center,
+          decoration:
+              BoxDecoration(
+            color: completedNode
+                ? Colors.green
+                    .withOpacity(
+                    0.6,
+                  )
+                : activeNode
+                    ? Colors.indigo
+                        .withOpacity(
+                        0.25,
+                      )
+                    : Colors.indigo
+                        .withOpacity(
+                        0.12,
+                      ),
+            borderRadius:
+                BorderRadius.circular(
+              18,
+            ),
+            border: Border.all(
+              color: activeNode
+                  ? Colors.indigo
+                  : Colors.indigo
+                      .shade100,
+              width: activeNode
+                  ? 2
+                  : 1,
+            ),
+          ),
+          child: Text(
+            number.toString(),
+            style:
+                const TextStyle(
+              fontSize: 28,
+              fontWeight:
+                  FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -218,49 +291,88 @@ class _TrailMakingScreenState
   }
 
   Widget _resultView() {
-    return Column(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
-
-      children: [
-        const Icon(
-          Icons.check_circle,
-          size: 64,
-          color: Colors.green,
-        ),
-
-        const SizedBox(height: 24),
-
-        const Text(
-          "Activity completed",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight:
-                FontWeight.bold,
+    return Center(
+      child: Column(
+        mainAxisAlignment:
+            MainAxisAlignment
+                .center,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            size: 72,
+            color: Colors.green,
           ),
-        ),
 
-        const SizedBox(height: 16),
-
-        const Text(
-          "Your responses have been recorded.",
-          style: TextStyle(
-            fontSize: 16,
+          const SizedBox(
+            height: 24,
           ),
-        ),
 
-        const SizedBox(height: 32),
-
-        ElevatedButton(
-          onPressed: () =>
-              Navigator.pop(
-                  context),
-
-          child: const Text(
-            "Return to Home",
+          const Text(
+            "Activity completed",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight:
+                  FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+
+          const SizedBox(
+            height: 20,
+          ),
+
+          Text(
+            "Time Taken: $elapsedSeconds seconds",
+            style:
+                const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            "Mistakes: $mistakes",
+            style:
+                const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 28,
+          ),
+
+          const Text(
+            "Your responses have been recorded.",
+            style: TextStyle(
+              fontSize: 16,
+            ),
+            textAlign:
+                TextAlign.center,
+          ),
+
+          const SizedBox(
+            height: 32,
+          ),
+
+          SizedBox(
+            width: 220,
+            child:
+                ElevatedButton(
+              onPressed: () {
+                Navigator.pop(
+                  context,
+                );
+              },
+              child: const Text(
+                "Return to Home",
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

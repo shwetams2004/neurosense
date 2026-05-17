@@ -48,7 +48,9 @@ class _SerialSubtractionScreenState
       finish();
     }
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> finish() async {
@@ -60,10 +62,6 @@ class _SerialSubtractionScreenState
       return;
     }
 
-    // =========================
-    // SAVE USER-SPECIFIC RESULT
-    // =========================
-
     await LocalStore
         .saveSerialSubtractionResult(
       userId: currentUser,
@@ -72,8 +70,7 @@ class _SerialSubtractionScreenState
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(
-              context)
+      ScaffoldMessenger.of(context)
           .showSnackBar(
         SnackBar(
           content: Text(
@@ -109,7 +106,8 @@ class _SerialSubtractionScreenState
           children: [
             Text(
               "Starting from $current, subtract 7 each time",
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 18,
               ),
             ),
@@ -139,13 +137,14 @@ class _SerialSubtractionScreenState
 
             Text(
               "Correct: $correct | Errors: $errors",
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
               ),
             ),
 
-            const Spacer(),
+            const SizedBox(height: 40),
 
             SizedBox(
               width:

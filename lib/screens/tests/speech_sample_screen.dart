@@ -26,13 +26,24 @@ class _SpeechSampleScreenState
     if (await recorder.hasPermission()) {
       await recorder.start();
 
-      setState(() {
-        recording = true;
-      });
+      if (mounted) {
+        setState(() {
+          recording = true;
+        });
+      }
     }
   }
 
   Future<void> stopRecording() async {
+    final path =
+        await recorder.stop();
+
+    if (mounted) {
+      setState(() {
+        recording = false;
+      });
+    }
+
     final currentUser =
         await LocalStore
             .getCurrentUser();
@@ -41,18 +52,7 @@ class _SpeechSampleScreenState
       return;
     }
 
-    final path =
-        await recorder.stop();
-
-    setState(() {
-      recording = false;
-    });
-
     if (path != null) {
-      // =========================
-      // MOCK SPEECH FEATURE EXTRACTION
-      // =========================
-
       await LocalStore
           .saveSpeechMetrics(
         userId: currentUser,
@@ -64,8 +64,7 @@ class _SpeechSampleScreenState
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(
-                context)
+        ScaffoldMessenger.of(context)
             .showSnackBar(
           const SnackBar(
             content: Text(
@@ -120,7 +119,7 @@ class _SpeechSampleScreenState
               ),
             ),
 
-            const Spacer(),
+            const SizedBox(height: 40),
 
             SizedBox(
               width:

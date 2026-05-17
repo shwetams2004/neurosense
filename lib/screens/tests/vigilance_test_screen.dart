@@ -117,14 +117,6 @@ class _VigilanceTestScreenState
   }
 
   Future<void> _finish() async {
-    final currentUser =
-        await LocalStore
-            .getCurrentUser();
-
-    if (currentUser == null) {
-      return;
-    }
-
     final avgRt =
         reactionTimes.isEmpty
             ? 0
@@ -133,9 +125,13 @@ class _VigilanceTestScreenState
                     ) ~/
                 reactionTimes.length;
 
-    // =========================
-    // SAVE USER-SPECIFIC RESULT
-    // =========================
+    final currentUser =
+        await LocalStore
+            .getCurrentUser();
+
+    if (currentUser == null) {
+      return;
+    }
 
     await LocalStore
         .saveVigilanceResult(
@@ -147,8 +143,7 @@ class _VigilanceTestScreenState
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(
-              context)
+      ScaffoldMessenger.of(context)
           .showSnackBar(
         SnackBar(
           content: Text(
@@ -168,45 +163,43 @@ class _VigilanceTestScreenState
       BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            const Text(
+        title: const Text(
           "Vigilance Task",
         ),
       ),
 
-      body: GestureDetector(
-        onTap: _onTap,
-
-        child: Center(
-          child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment
-                    .center,
-
-            children: [
-              Text(
-                showTarget
-                    ? "●"
-                    : "+",
-
-                style:
-                    const TextStyle(
-                  fontSize: 64,
+      body: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _onTap,
+          child: Center(
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment
+                      .center,
+              children: [
+                Text(
+                  showTarget
+                      ? "●"
+                      : "+",
+                  style:
+                      const TextStyle(
+                    fontSize: 64,
+                  ),
                 ),
-              ),
 
-              const SizedBox(
-                  height: 20),
+                const SizedBox(
+                    height: 20),
 
-              Text(
-                "Trial ${currentTrial + 1} / $totalTrials",
-
-                style:
-                    const TextStyle(
-                  fontSize: 16,
+                Text(
+                  "Trial $currentTrial / $totalTrials",
+                  style:
+                      const TextStyle(
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -17,8 +17,7 @@ class VisuospatialTaskScreen
 class _VisuospatialTaskScreenState
     extends State<
         VisuospatialTaskScreen> {
-  final List<String> targetOrder =
-      [
+  final List<String> targetOrder = [
     "circle",
     "square",
     "triangle",
@@ -53,41 +52,43 @@ class _VisuospatialTaskScreenState
     Future.delayed(
       const Duration(seconds: 4),
       () {
-        if (mounted) {
-          setState(() {
-            showingTarget =
-                false;
-          });
-        }
+        if (!mounted) return;
+
+        setState(() {
+          showingTarget = false;
+        });
       },
     );
   }
 
-  void handleTap(
-      String shape) {
+  void handleTap(String shape) {
     if (finished) return;
 
     setState(() {
       taps++;
 
       if (shape ==
-          targetOrder[
-              currentIndex]) {
+          targetOrder[currentIndex]) {
         currentIndex++;
       } else {
         errors++;
       }
-
-      if (currentIndex ==
-          targetOrder.length) {
-        finished = true;
-
-        finishTask();
-      }
     });
+
+    if (currentIndex ==
+        targetOrder.length) {
+      finished = true;
+
+      finishTask();
+    }
   }
 
   Future<void> finishTask() async {
+    final seconds =
+        DateTime.now()
+            .difference(startTime)
+            .inSeconds;
+
     final currentUser =
         await LocalStore
             .getCurrentUser();
@@ -95,15 +96,6 @@ class _VisuospatialTaskScreenState
     if (currentUser == null) {
       return;
     }
-
-    final seconds =
-        DateTime.now()
-            .difference(startTime)
-            .inSeconds;
-
-    // =========================
-    // SAVE USER-SPECIFIC RESULT
-    // =========================
 
     await LocalStore
         .saveVisuospatialResult(
@@ -114,8 +106,7 @@ class _VisuospatialTaskScreenState
     );
 
     if (mounted) {
-      ScaffoldMessenger.of(
-              context)
+      ScaffoldMessenger.of(context)
           .showSnackBar(
         SnackBar(
           content: Text(
@@ -130,6 +121,8 @@ class _VisuospatialTaskScreenState
         const Duration(
             milliseconds: 800),
         () {
+          if (!mounted) return;
+
           Navigator.pop(context);
         },
       );
@@ -138,48 +131,51 @@ class _VisuospatialTaskScreenState
 
   Widget shapeButton(
       String shape) {
-    return InkWell(
-      onTap: () =>
-          handleTap(shape),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () =>
+            handleTap(shape),
 
-      borderRadius:
-          BorderRadius.circular(
-              12),
+        borderRadius:
+            BorderRadius.circular(
+                12),
 
-      child: Container(
-        width: 80,
+        child: Container(
+          width: 80,
+          height: 80,
 
-        height: 80,
+          margin:
+              const EdgeInsets.all(8),
 
-        margin:
-            const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.indigo,
+            ),
 
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.indigo,
+            borderRadius:
+                BorderRadius.circular(
+                    12),
+
+            color: Colors.white,
           ),
 
-          borderRadius:
-              BorderRadius.circular(
-                  12),
+          alignment:
+              Alignment.center,
 
-          color: Colors.white,
-        ),
+          child: Text(
+            shape.toUpperCase(),
 
-        alignment:
-            Alignment.center,
+            style:
+                const TextStyle(
+              fontSize: 14,
+              fontWeight:
+                  FontWeight.w500,
+            ),
 
-        child: Text(
-          shape.toUpperCase(),
-
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight:
-                FontWeight.w500,
+            textAlign:
+                TextAlign.center,
           ),
-
-          textAlign:
-              TextAlign.center,
         ),
       ),
     );
@@ -206,7 +202,8 @@ class _VisuospatialTaskScreenState
                   ? "Remember this order"
                   : "Tap the shapes in the same order",
 
-              style: const TextStyle(
+              style:
+                  const TextStyle(
                 fontSize: 18,
               ),
 

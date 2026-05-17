@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import '../../services/firestore_service.dart';
+import '../../storage/current_patient.dart';
 import '../../storage/local_store.dart';
 import '../../passive/keyboard_tracker.dart';
 
@@ -74,7 +75,7 @@ class _MemoryTestScreenState
           ),
         ),
 
-        const Spacer(),
+        const SizedBox(height: 40),
 
         SizedBox(
           width: double.infinity,
@@ -129,19 +130,14 @@ class _MemoryTestScreenState
           },
         ),
 
-        const Spacer(),
+
+        const SizedBox(height: 40),
 
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () async {
-              final currentUser =
-                  await LocalStore
-                      .getCurrentUser();
-
-              if (currentUser == null) {
-                return;
-              }
+              
 
               final input = recallController.text
                   .toLowerCase();
@@ -165,11 +161,11 @@ class _MemoryTestScreenState
               // SAVE USER-SPECIFIC SCORE
               // =========================
 
-              await LocalStore
-                  .saveMemoryScore(
-                currentUser,
-                score,
-              );
+              
+              await FirestoreService.saveMemoryResult(
+  patientId: CurrentPatient.patientId!,
+  score: score,
+);
 
               // =========================
               // PASSIVE KEYBOARD METRICS

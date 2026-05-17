@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553234384489",
+    "project_id": "neurosense-abcfe",
+    "storage_bucket": "neurosense-abcfe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553234384489:android:c4636fbd49a06370f4c4f8",
+        "android_client_info": {
+          "package_name": "com.example.neurosense"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCrTO5pxgMdJNxz9URz7yy0JKj8X5C_14A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

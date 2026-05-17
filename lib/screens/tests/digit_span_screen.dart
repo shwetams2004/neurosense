@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../../storage/local_store.dart';
 
 class DigitSpanScreen extends StatefulWidget {
-  const DigitSpanScreen({super.key});
+  const DigitSpanScreen({
+    super.key,
+  });
 
   @override
   State<DigitSpanScreen> createState() =>
@@ -30,10 +32,20 @@ class _DigitSpanScreenState
 
   int maxSpanAchieved = 0;
 
+  bool saving = false;
+
   @override
   void initState() {
     super.initState();
+
     generateDigits();
+  }
+
+  @override
+  void dispose() {
+    inputController.dispose();
+
+    super.dispose();
   }
 
   void generateDigits() {
@@ -58,13 +70,8 @@ class _DigitSpanScreenState
     );
   }
 
-  void submitAnswer() async {
-    final currentUser =
-        await LocalStore.getCurrentUser();
-
-    if (currentUser == null) {
-      return;
-    }
+  Future<void> submitAnswer() async {
+    FocusScope.of(context).unfocus();
 
     final userInput =
         inputController.text
@@ -79,13 +86,29 @@ class _DigitSpanScreenState
 
       currentSpan++;
 
+      if (mounted) {
+        setState(() {});
+      }
+
       generateDigits();
     } else {
-      testFinished = true;
+      setState(() {
+        saving = true;
+      });
 
-      // =========================
-      // SAVE USER-SPECIFIC SCORE
-      // =========================
+      final currentUser =
+          await LocalStore
+              .getCurrentUser();
+
+      if (currentUser == null) {
+        if (!mounted) return;
+
+        setState(() {
+          saving = false;
+        });
+
+        return;
+      }
 
       await LocalStore
           .saveDigitSpanScore(
@@ -93,7 +116,12 @@ class _DigitSpanScreenState
         maxSpanAchieved,
       );
 
-      setState(() {});
+      if (!mounted) return;
+
+      setState(() {
+        testFinished = true;
+        saving = false;
+      });
     }
   }
 
@@ -101,135 +129,217 @@ class _DigitSpanScreenState
   Widget build(
       BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset:
+          true,
       appBar: AppBar(
         title: const Text(
           "Digit Span Activity",
         ),
       ),
-
-      body: Padding(
-        padding:
-            const EdgeInsets.all(24),
-
-        child: testFinished
-            ? _resultView()
-            : _testView(),
+      body: SafeArea(
+        child: Padding(
+          padding:
+              const EdgeInsets.all(
+            24,
+          ),
+          child: testFinished
+              ? _resultView()
+              : _testView(),
+        ),
       ),
     );
   }
 
   Widget _testView() {
-    return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.center,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
 
-      children: [
-        const Text(
-          "Remember the numbers in the same order.",
-          style: TextStyle(
-            fontSize: 18,
-          ),
-          textAlign:
-              TextAlign.center,
-        ),
-
-        const SizedBox(height: 24),
-
-        if (showingDigits)
-          Text(
-            currentDigits.join(" "),
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight:
-                  FontWeight.bold,
+          const Text(
+            "Remember the numbers in the same order.",
+            style: TextStyle(
+              fontSize: 18,
             ),
-          )
-        else
-          TextField(
-            controller:
-                inputController,
-
-            keyboardType:
-                TextInputType.number,
-
-            decoration:
-                const InputDecoration(
-              border:
-                  OutlineInputBorder(),
-
-              hintText:
-                  "Enter numbers",
-            ),
+            textAlign:
+                TextAlign.center,
           ),
 
-        const Spacer(),
+          const SizedBox(height: 32),
 
-        if (!showingDigits)
-          SizedBox(
-            width:
-                double.infinity,
-
-            child:
-                ElevatedButton(
-              onPressed:
-                  submitAnswer,
-
-              child:
-                  const Text(
-                "Submit",
+          if (showingDigits)
+            Container(
+              width:
+                  double.infinity,
+              padding:
+                  const EdgeInsets.all(
+                18,
               ),
+              decoration:
+                  BoxDecoration(
+                border: Border.all(
+                  color:
+                      Colors.grey,
+                ),
+                borderRadius:
+                    BorderRadius
+                        .circular(
+                  12,
+                ),
+              ),
+              child: Text(
+                currentDigits.join(
+                  " ",
+                ),
+                style:
+                    const TextStyle(
+                  fontSize: 30,
+                  fontWeight:
+                      FontWeight
+                          .bold,
+                ),
+                textAlign:
+                    TextAlign.center,
+              ),
+            )
+          else
+            Column(
+              children: [
+                TextField(
+                  controller:
+                      inputController,
+                  keyboardType:
+                      TextInputType
+                          .number,
+                  textInputAction:
+                      TextInputAction
+                          .done,
+                  onSubmitted:
+                      (_) async {
+                    await submitAnswer();
+                  },
+                  decoration:
+                      const InputDecoration(
+                    border:
+                        OutlineInputBorder(),
+                    hintText:
+                        "Enter numbers",
+                  ),
+                ),
+
+                const SizedBox(
+                  height: 32,
+                ),
+
+                SizedBox(
+                  width:
+                      double.infinity,
+                  height: 52,
+                  child:
+                      ElevatedButton(
+                    onPressed:
+                        saving
+                            ? null
+                            : () async {
+                                await submitAnswer();
+                              },
+                    child: saving
+                        ? const SizedBox(
+                            height:
+                                22,
+                            width:
+                                22,
+                            child:
+                                CircularProgressIndicator(
+                              strokeWidth:
+                                  2,
+                            ),
+                          )
+                        : const Text(
+                            "Submit",
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _resultView() {
-    return Column(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
-
-      children: [
-        const Icon(
-          Icons.check_circle,
-          size: 64,
-          color: Colors.green,
-        ),
-
-        const SizedBox(height: 24),
-
-        const Text(
-          "Activity completed",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight:
-                FontWeight.bold,
+    return Center(
+      child: Column(
+        mainAxisAlignment:
+            MainAxisAlignment
+                .center,
+        children: [
+          const Icon(
+            Icons.check_circle,
+            size: 70,
+            color: Colors.green,
           ),
-        ),
 
-        const SizedBox(height: 16),
-
-        const Text(
-          "Your responses have been recorded.",
-          style: TextStyle(
-            fontSize: 16,
+          const SizedBox(
+            height: 24,
           ),
-          textAlign:
-              TextAlign.center,
-        ),
 
-        const SizedBox(height: 32),
-
-        ElevatedButton(
-          onPressed: () =>
-              Navigator.pop(
-                  context),
-
-          child: const Text(
-            "Return to Home",
+          const Text(
+            "Activity completed",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight:
+                  FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+
+          const SizedBox(
+            height: 16,
+          ),
+
+          Text(
+            "Maximum span achieved: $maxSpanAchieved",
+            style:
+                const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 16,
+          ),
+
+          const Text(
+            "Your responses have been recorded.",
+            style: TextStyle(
+              fontSize: 16,
+            ),
+            textAlign:
+                TextAlign.center,
+          ),
+
+          const SizedBox(
+            height: 32,
+          ),
+
+          SizedBox(
+            width: 220,
+            child:
+                ElevatedButton(
+              onPressed: () {
+                Navigator.pop(
+                  context,
+                );
+              },
+              child: const Text(
+                "Return to Home",
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

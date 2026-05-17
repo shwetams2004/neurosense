@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import '../../services/firestore_service.dart';
 import 'package:flutter/material.dart';
 
 import '../../storage/local_store.dart';
@@ -167,18 +167,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: isValid()
-                      ? () async {
-                          await saveUserProfile();
+    ? () async {
+        await FirestoreService.createPatient(
+          name: nameController.text.trim(),
+          age: int.parse(ageController.text),
+          gender: selectedGender!,
+          caregiver:
+              caregiverController.text.trim(),
+          relationship:
+              relationshipController.text.trim(),
+        );
 
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  const HomeScreen(),
-                            ),
-                          );
-                        }
-                      : null,
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const HomeScreen(),
+            ),
+          );
+        }
+      }
+    : null,
                   child: const Text("Continue"),
                 ),
               ),

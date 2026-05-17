@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:math';
 extension ListUtils<T> on List<T> {
   Iterable<T> takeLast(int n) => skip(length - n);
 }
@@ -289,23 +289,181 @@ static Future<List<int>>
       .toList();
 }
 
-  /* ================= KEYBOARD ================= */
+/* ================= KEYBOARD ================= */
 
-  static const keyboardMetricsKey = "keyboard_metrics";
+static const keyboardMetricsKey =
+    "keyboard_metrics";
 
-  static Future<void> saveKeyboardMetrics(
-      Map<String, double> metrics) async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(keyboardMetricsKey) ?? [];
+static Future<void>
+    saveKeyboardMetrics(
+  Map<String, double> metrics,
+) async {
+  final prefs =
+      await SharedPreferences
+          .getInstance();
 
-    list.add(
-      "${metrics["avg_inter_key_interval_ms"] ?? 0},"
-      "${metrics["backspace_count"] ?? 0},"
-      "${metrics["error_bursts"] ?? 0}",
-    );
+  final list =
+      prefs.getStringList(
+            keyboardMetricsKey,
+          ) ??
+          [];
 
-    await prefs.setStringList(keyboardMetricsKey, list);
+  // =========================
+  // STORE FULL METRIC SET
+  // =========================
+
+  final encoded =
+      [
+        metrics[
+                "avg_inter_key_interval_ms"] ??
+            0,
+
+        metrics[
+                "backspace_count"] ??
+            0,
+
+        metrics[
+                "error_bursts"] ??
+            0,
+
+        metrics[
+                "total_keys"] ??
+            0,
+
+        metrics[
+                "hesitation_pauses"] ??
+            0,
+
+        metrics[
+                "long_pauses"] ??
+            0,
+
+        metrics[
+                "session_duration_sec"] ??
+            0,
+
+        metrics[
+                "typing_speed_keys_per_sec"] ??
+            0,
+
+        metrics[
+                "correction_ratio"] ??
+            0,
+      ].join(",");
+
+  list.add(encoded);
+
+  await prefs.setStringList(
+    keyboardMetricsKey,
+    list,
+  );
+}
+
+static Future<
+        List<Map<String, double>>>
+    getKeyboardMetrics() async {
+  final prefs =
+      await SharedPreferences
+          .getInstance();
+
+  final raw =
+      prefs.getStringList(
+            keyboardMetricsKey,
+          ) ??
+          [];
+
+  return raw.map((entry) {
+    final parts =
+        entry.split(",");
+
+    return {
+      "avg_inter_key_interval_ms":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        0) ??
+                    "0",
+              ) ??
+              0,
+
+      "backspace_count":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        1) ??
+                    "0",
+              ) ??
+              0,
+
+      "error_bursts":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        2) ??
+                    "0",
+              ) ??
+              0,
+
+      "total_keys":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        3) ??
+                    "0",
+              ) ??
+              0,
+
+      "hesitation_pauses":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        4) ??
+                    "0",
+              ) ??
+              0,
+
+      "long_pauses":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        5) ??
+                    "0",
+              ) ??
+              0,
+
+      "session_duration_sec":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        6) ??
+                    "0",
+              ) ??
+              0,
+
+      "typing_speed_keys_per_sec":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        7) ??
+                    "0",
+              ) ??
+              0,
+
+      "correction_ratio":
+          double.tryParse(
+                parts.elementAtOrNull(
+                        8) ??
+                    "0",
+              ) ??
+              0,
+    };
+  }).toList();
+}
+
+static Future<
+        Map<String, double>>
+    getLatestKeyboardMetrics() async {
+  final all =
+      await getKeyboardMetrics();
+
+  if (all.isEmpty) {
+    return {};
   }
+
+  return all.last;
+}
 
   /* ================= VIGILANCE ================= */
 

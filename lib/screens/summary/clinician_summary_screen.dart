@@ -39,6 +39,12 @@ class _ClinicianSummaryScreenState
 
   List<double> executiveTimeline = [];
 
+  List<Map<String, double>>
+      keyboardMetrics = [];
+
+  Map<String, double>
+      latestKeyboardMetrics = {};
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +116,14 @@ class _ClinicianSummaryScreenState
         currentUser,
       );
 
+      final keyboard =
+          await LocalStore
+              .getKeyboardMetrics();
+
+      final latestKeyboard =
+          await LocalStore
+              .getLatestKeyboardMetrics();
+
       if (!mounted) return;
 
       setState(() {
@@ -141,6 +155,11 @@ class _ClinicianSummaryScreenState
             RiskEngine.toZTimeline(
           trail,
         );
+
+        keyboardMetrics = keyboard;
+
+        latestKeyboardMetrics =
+            latestKeyboard;
 
         loading = false;
       });
@@ -207,6 +226,69 @@ class _ClinicianSummaryScreenState
       default:
         return key;
     }
+  }
+
+  Widget _passiveMetric(
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Container(
+          padding:
+              const EdgeInsets.all(
+            12,
+          ),
+          decoration:
+              BoxDecoration(
+            color: Colors.indigo
+                .withOpacity(0.1),
+            borderRadius:
+                BorderRadius.circular(
+              12,
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.indigo,
+          ),
+        ),
+
+        const SizedBox(width: 16),
+
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment
+                    .start,
+            children: [
+              Text(
+                title,
+                style:
+                    const TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey,
+                ),
+              ),
+
+              const SizedBox(
+                  height: 4),
+
+              Text(
+                value,
+                style:
+                    const TextStyle(
+                  fontSize: 18,
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBaselineInProgress() {
@@ -395,24 +477,6 @@ class _ClinicianSummaryScreenState
               ],
             ),
           ),
-
-          const SizedBox(height: 30),
-
-          SizedBox(
-            width: double.infinity,
-            child:
-                ElevatedButton.icon(
-              icon: const Icon(
-                Icons.refresh,
-              ),
-              label: const Text(
-                "Generate New Demo Report",
-              ),
-              onPressed: () {
-                setState(() {});
-              },
-            ),
-          ),
         ],
       ),
     );
@@ -576,6 +640,74 @@ class _ClinicianSummaryScreenState
           const SizedBox(height: 28),
 
           const Text(
+            "Passive Cognitive Biomarkers",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight:
+                  FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          Container(
+            width: double.infinity,
+            padding:
+                const EdgeInsets.all(
+              20,
+            ),
+            decoration:
+                BoxDecoration(
+              color: Colors.white,
+              borderRadius:
+                  BorderRadius.circular(
+                20,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment
+                      .start,
+              children: [
+                _passiveMetric(
+                  "Typing Speed",
+                  "${(latestKeyboardMetrics["typing_speed_keys_per_sec"] ?? 0).toStringAsFixed(2)} keys/sec",
+                  Icons.speed,
+                ),
+
+                const SizedBox(
+                    height: 18),
+
+                _passiveMetric(
+                  "Correction Ratio",
+                  "${((latestKeyboardMetrics["correction_ratio"] ?? 0) * 100).toStringAsFixed(1)}%",
+                  Icons.keyboard_return,
+                ),
+
+                const SizedBox(
+                    height: 18),
+
+                _passiveMetric(
+                  "Hesitation Pauses",
+                  "${(latestKeyboardMetrics["hesitation_pauses"] ?? 0).toInt()} events",
+                  Icons.pause_circle_outline,
+                ),
+
+                const SizedBox(
+                    height: 18),
+
+                _passiveMetric(
+                  "Long Inactivity Bursts",
+                  "${(latestKeyboardMetrics["long_pauses"] ?? 0).toInt()} detected",
+                  Icons.timelapse,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 28),
+
+          const Text(
             "Contributing factors",
             style: TextStyle(
               fontSize: 18,
@@ -674,10 +806,7 @@ class _ClinicianSummaryScreenState
                   CircularProgressIndicator(),
             )
           : SingleChildScrollView(
-              child: riskLevel ==
-                      "insufficient_data"
-                  ? _buildBaselineInProgress()
-                  : _buildSummary(),
+              child: _buildSummary(),
             ),
     );
   }

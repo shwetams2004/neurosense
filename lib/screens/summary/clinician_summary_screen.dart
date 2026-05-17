@@ -612,6 +612,108 @@ class _ClinicianSummaryScreenState
               ],
             ),
           ),
+          // =========================
+// COGNITIVE SCORE CARDS
+// =========================
+
+_demoScoreCard(
+  "Memory Function",
+  87,
+  Icons.memory,
+),
+
+const SizedBox(height: 16),
+
+_demoScoreCard(
+  "Attention Span",
+  68,
+  Icons.visibility,
+),
+
+const SizedBox(height: 16),
+
+_demoScoreCard(
+  "Executive Function",
+  72,
+  Icons.psychology,
+),
+
+const SizedBox(height: 16),
+
+_demoScoreCard(
+  "Speech Stability",
+  85,
+  Icons.mic,
+),
+
+const SizedBox(height: 30),
+
+// =========================
+// AI INSIGHTS
+// =========================
+
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(20),
+  decoration: BoxDecoration(
+    color: Colors.indigo.withOpacity(0.08),
+    borderRadius:
+        BorderRadius.circular(18),
+  ),
+
+  child: const Column(
+    crossAxisAlignment:
+        CrossAxisAlignment.start,
+    children: [
+      Text(
+        "AI Insights",
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight:
+              FontWeight.bold,
+        ),
+      ),
+
+      SizedBox(height: 16),
+
+      Text(
+        "• Mild decline patterns observed in memory recall consistency.",
+        style: TextStyle(
+          fontSize: 16,
+        ),
+      ),
+
+      SizedBox(height: 10),
+
+      Text(
+        "• Attention variability increased during sequencing tasks.",
+        style: TextStyle(
+          fontSize: 16,
+        ),
+      ),
+
+      SizedBox(height: 10),
+
+      Text(
+        "• Executive function performance remains relatively stable.",
+        style: TextStyle(
+          fontSize: 16,
+        ),
+      ),
+
+      SizedBox(height: 10),
+
+      Text(
+        "• Continued longitudinal monitoring recommended.",
+        style: TextStyle(
+          fontSize: 16,
+        ),
+      ),
+    ],
+  ),
+),
+
+const SizedBox(height: 30),
 
           const SizedBox(height: 28),
 
@@ -766,21 +868,34 @@ class _ClinicianSummaryScreenState
                 "Generate Clinician PDF Report",
               ),
               onPressed: () async {
-                await ClinicianPDF
-                    .generate();
+  try {
+    await ClinicianPDF.generate();
 
-                if (!mounted) return;
+    if (!mounted) return;
 
-                ScaffoldMessenger.of(
-                        context)
-                    .showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Clinician report generated successfully",
-                    ),
-                  ),
-                );
-              },
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      const SnackBar(
+        content: Text(
+          "PDF report generated successfully",
+        ),
+      ),
+    );
+  } catch (e) {
+    debugPrint(e.toString());
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(
+          "PDF generation failed: $e",
+        ),
+      ),
+    );
+  }
+},
             ),
           ),
 

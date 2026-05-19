@@ -105,7 +105,7 @@ class _SerialSubtractionScreenState
 
           children: [
             Text(
-              "Starting from $current, subtract 7 each time",
+              "Starting from $current, subtract 7 and enter ONE answer at a time.",
               style:
                   const TextStyle(
                 fontSize: 18,

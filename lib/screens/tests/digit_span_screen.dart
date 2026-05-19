@@ -71,59 +71,101 @@ class _DigitSpanScreenState
   }
 
   Future<void> submitAnswer() async {
-    FocusScope.of(context).unfocus();
 
-    final userInput =
-        inputController.text
-            .replaceAll(" ", "");
+  if (saving) return;
 
-    final correct =
-        currentDigits.join("");
+  FocusScope.of(context).unfocus();
 
-    if (userInput == correct) {
-      maxSpanAchieved =
-          currentSpan;
+  final userInput =
+      inputController.text
+          .replaceAll(" ", "");
 
-      currentSpan++;
+  final correct =
+      currentDigits.join("");
 
-      if (mounted) {
-        setState(() {});
-      }
+  bool endTest = false;
 
-      generateDigits();
-    } else {
-      setState(() {
-        saving = true;
-      });
+  // =========================
+  // CORRECT ANSWER
+  // =========================
 
-      final currentUser =
-          await LocalStore
-              .getCurrentUser();
+  if (userInput == correct) {
 
-      if (currentUser == null) {
-        if (!mounted) return;
+    maxSpanAchieved =
+        currentSpan;
 
-        setState(() {
-          saving = false;
-        });
+    currentSpan++;
 
-        return;
-      }
+  }
 
-      await LocalStore
-          .saveDigitSpanScore(
-        currentUser,
-        maxSpanAchieved,
-      );
+  // =========================
+  // WRONG ANSWER
+  // =========================
+
+  else {
+
+    endTest = true;
+  }
+
+  // =========================
+  // MAX LIMIT REACHED
+  // =========================
+
+  if (currentSpan > 5) {
+    endTest = true;
+  }
+
+  // =========================
+  // FINISH TEST
+  // =========================
+
+  if (endTest) {
+
+    setState(() {
+      saving = true;
+    });
+
+    final currentUser =
+        await LocalStore
+            .getCurrentUser();
+
+    if (currentUser == null) {
 
       if (!mounted) return;
 
       setState(() {
-        testFinished = true;
         saving = false;
       });
+
+      return;
     }
+
+    await LocalStore
+        .saveDigitSpanScore(
+      currentUser,
+      maxSpanAchieved,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      testFinished = true;
+      saving = false;
+    });
+
+    return;
   }
+
+  // =========================
+  // NEXT ROUND
+  // =========================
+
+  generateDigits();
+
+  if (mounted) {
+    setState(() {});
+  }
+}
 
   @override
   Widget build(

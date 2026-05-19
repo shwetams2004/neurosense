@@ -19,11 +19,14 @@ class VigilanceTestScreen
 class _VigilanceTestScreenState
     extends State<
         VigilanceTestScreen> {
+
   static const int totalTrials = 20;
 
   bool showTarget = false;
 
   bool responded = false;
+
+  bool completed = false;
 
   int currentTrial = 0;
 
@@ -45,9 +48,21 @@ class _VigilanceTestScreenState
     _runTrial();
   }
 
+  // =========================
+  // RUN TRIALS
+  // =========================
+
   Future<void> _runTrial() async {
+
     if (currentTrial >=
         totalTrials) {
+
+      await Future.delayed(
+        const Duration(
+          milliseconds: 500,
+        ),
+      );
+
       await _finish();
 
       return;
@@ -64,6 +79,7 @@ class _VigilanceTestScreenState
     if (!mounted) return;
 
     setState(() {
+
       showTarget =
           Random().nextBool();
 
@@ -76,47 +92,72 @@ class _VigilanceTestScreenState
     });
 
     await Future.delayed(
-      const Duration(seconds: 1),
+      const Duration(
+        seconds: 1,
+      ),
     );
 
     if (showTarget &&
         !responded) {
+
       misses++;
     }
 
     if (!mounted) return;
 
     setState(() {
+
       showTarget = false;
 
       stimulusTime = null;
     });
 
-    _runTrial();
+    if (mounted &&
+        currentTrial <
+            totalTrials) {
+
+      _runTrial();
+    }
   }
 
+  // =========================
+  // TAP RESPONSE
+  // =========================
+
   void _onTap() {
+
     if (stimulusTime == null ||
-        responded) {
+        responded ||
+        completed) {
       return;
     }
 
     responded = true;
 
     final rt = DateTime.now()
-        .difference(stimulusTime!)
+        .difference(
+          stimulusTime!,
+        )
         .inMilliseconds;
 
     if (showTarget) {
+
       hits++;
 
       reactionTimes.add(rt);
+
     } else {
+
       falseAlarms++;
     }
   }
 
+  // =========================
+  // FINISH TEST
+  // =========================
+
   Future<void> _finish() async {
+
     final avgRt =
         reactionTimes.isEmpty
             ? 0
@@ -142,26 +183,23 @@ class _VigilanceTestScreenState
       avgRtMs: avgRt,
     );
 
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        SnackBar(
-          content: Text(
-            "Vigilance task completed.\nHits: $hits | Misses: $misses",
-          ),
-        ),
-      );
-    }
+    if (!mounted) return;
 
-    if (mounted) {
-      Navigator.pop(context);
-    }
+    setState(() {
+      completed = true;
+    });
   }
+
+  // =========================
+  // BUILD
+  // =========================
 
   @override
   Widget build(
       BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
         title: const Text(
           "Vigilance Task",
@@ -169,39 +207,199 @@ class _VigilanceTestScreenState
       ),
 
       body: Material(
+
         color: Colors.transparent,
+
         child: InkWell(
+
           onTap: _onTap,
-          child: Center(
-            child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment
-                      .center,
-              children: [
-                Text(
-                  showTarget
-                      ? "●"
-                      : "+",
-                  style:
-                      const TextStyle(
-                    fontSize: 64,
+
+          child: completed
+              ? _resultView()
+              : Center(
+
+                  child: Column(
+
+                    mainAxisAlignment:
+                        MainAxisAlignment
+                            .center,
+
+                    children: [
+
+                      const Padding(
+
+                        padding:
+                            EdgeInsets.symmetric(
+                          horizontal: 24,
+                        ),
+
+                        child: Text(
+
+                          "Tap the screen ONLY when the black dot appears.\nDo not tap when the '+' sign is shown.",
+
+                          textAlign:
+                              TextAlign.center,
+
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight:
+                                FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 40,
+                      ),
+
+                      Text(
+
+                        showTarget
+                            ? "●"
+                            : "+",
+
+                        style:
+                            const TextStyle(
+                          fontSize: 64,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 20,
+                      ),
+
+                      Text(
+
+                        "Trial $currentTrial / $totalTrials",
+
+                        style:
+                            const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+        ),
+      ),
+    );
+  }
 
-                const SizedBox(
-                    height: 20),
+  // =========================
+  // RESULT VIEW
+  // =========================
 
-                Text(
-                  "Trial $currentTrial / $totalTrials",
-                  style:
-                      const TextStyle(
-                    fontSize: 16,
-                  ),
-                ),
-              ],
+  Widget _resultView() {
+
+    final avgRt =
+        reactionTimes.isEmpty
+            ? 0
+            : reactionTimes.reduce(
+                      (a, b) => a + b,
+                    ) ~/
+                reactionTimes.length;
+
+    return Center(
+
+      child: Column(
+
+        mainAxisAlignment:
+            MainAxisAlignment.center,
+
+        children: [
+
+          const Icon(
+            Icons.check_circle,
+            size: 72,
+            color: Colors.green,
+          ),
+
+          const SizedBox(
+            height: 24,
+          ),
+
+          const Text(
+
+            "Vigilance Test Completed",
+
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
-        ),
+
+          const SizedBox(
+            height: 24,
+          ),
+
+          Text(
+            "Correct Hits: $hits",
+
+            style: const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            "Misses: $misses",
+
+            style: const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            "False Alarms: $falseAlarms",
+
+            style: const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+            "Average Reaction Time: ${avgRt} ms",
+
+            style: const TextStyle(
+              fontSize: 18,
+            ),
+          ),
+
+          const SizedBox(
+            height: 32,
+          ),
+
+          SizedBox(
+
+            width: 220,
+
+            child: ElevatedButton(
+
+              onPressed: () {
+
+                Navigator.pop(
+                  context,
+                );
+              },
+
+              child: const Text(
+                "Return to Home",
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

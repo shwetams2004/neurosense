@@ -224,8 +224,6 @@ class _TrailMakingScreenState
     final bool completedNode =
         number < currentTarget;
 
-    final bool activeNode =
-        number == currentTarget;
 
     return Material(
       color: Colors.transparent,
@@ -246,36 +244,26 @@ class _TrailMakingScreenState
           ),
           alignment:
               Alignment.center,
-          decoration:
-              BoxDecoration(
-            color: completedNode
-                ? Colors.green
-                    .withOpacity(
-                    0.6,
-                  )
-                : activeNode
-                    ? Colors.indigo
-                        .withOpacity(
-                        0.25,
-                      )
-                    : Colors.indigo
-                        .withOpacity(
-                        0.12,
-                      ),
-            borderRadius:
-                BorderRadius.circular(
-              18,
-            ),
-            border: Border.all(
-              color: activeNode
-                  ? Colors.indigo
-                  : Colors.indigo
-                      .shade100,
-              width: activeNode
-                  ? 2
-                  : 1,
-            ),
-          ),
+          decoration: BoxDecoration(
+
+  color: completedNode
+      ? Colors.green.withOpacity(
+          0.6,
+        )
+      : Colors.indigo.withOpacity(
+          0.12,
+        ),
+
+  borderRadius:
+      BorderRadius.circular(
+    18,
+  ),
+
+  border: Border.all(
+    color: Colors.indigo.shade100,
+    width: 1,
+  ),
+),
           child: Text(
             number.toString(),
             style:

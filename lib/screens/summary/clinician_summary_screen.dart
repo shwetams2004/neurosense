@@ -39,8 +39,22 @@ class _ClinicianSummaryScreenState
 
   List<double> executiveTimeline = [];
 
-  List<Map<String, double>>
-      keyboardMetrics = [];
+  Map<String, double>
+    keyboardMetrics = {};
+  
+  Future<void>
+    loadKeyboardMetrics() async {
+
+  final latest =
+      await LocalStore
+          .getLatestKeyboardMetrics();
+
+  if (!mounted) return;
+
+  setState(() {
+  latestKeyboardMetrics = latest;
+});
+}
 
   Map<String, double>
       latestKeyboardMetrics = {};
@@ -48,6 +62,7 @@ class _ClinicianSummaryScreenState
   @override
   void initState() {
     super.initState();
+    loadKeyboardMetrics();
 
     loadRisk();
   }
@@ -116,9 +131,7 @@ class _ClinicianSummaryScreenState
         currentUser,
       );
 
-      final keyboard =
-          await LocalStore
-              .getKeyboardMetrics();
+      
 
       final latestKeyboard =
           await LocalStore
@@ -156,10 +169,8 @@ class _ClinicianSummaryScreenState
           trail,
         );
 
-        keyboardMetrics = keyboard;
 
-        latestKeyboardMetrics =
-            latestKeyboard;
+      
 
         loading = false;
       });

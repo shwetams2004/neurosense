@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../services/gemini_service.dart';
+import '../../services/typing_biomarker_service.dart';
+import '../../storage/local_store.dart';
 class AIChatScreen
     extends StatefulWidget {
   const AIChatScreen({
@@ -30,6 +32,19 @@ class _AIChatScreenState
 
   bool typing = false;
 
+  final TypingBiomarkerService
+    biomarkerService =
+        TypingBiomarkerService();
+
+String previousText = "";
+@override
+void initState() {
+
+  super.initState();
+
+  biomarkerService.startSession();
+}
+
   Future<void> sendMessage() async {
     final text =
         controller.text.trim();
@@ -45,7 +60,58 @@ class _AIChatScreenState
       typing = true;
     });
 
+    final biomarkerData =
+    biomarkerService.endSession();
+
+await LocalStore
+    .saveKeyboardMetrics({
+
+  "avg_inter_key_interval_ms":
+      biomarkerData.averagePauseMs,
+
+  "backspace_count":
+      biomarkerData.backspaceCount
+          .toDouble(),
+
+  "error_bursts":
+      biomarkerData.pauseCount
+          .toDouble(),
+
+  "total_keys":
+      biomarkerData.totalCharacters
+          .toDouble(),
+
+  "hesitation_pauses":
+      biomarkerData.pauseCount
+          .toDouble(),
+
+  "long_pauses":
+      biomarkerData.pauseCount
+          .toDouble(),
+
+  "session_duration_sec":
+      biomarkerData
+              .sessionDurationMs /
+          1000,
+
+  "typing_speed_keys_per_sec":
+      biomarkerData.typingSpeed,
+
+  "correction_ratio":
+      biomarkerData
+                  .totalCharacters ==
+              0
+          ? 0
+          : biomarkerData
+                  .backspaceCount /
+              biomarkerData
+                  .totalCharacters,
+});
+
+biomarkerService.startSession();
+
     controller.clear();
+    previousText = "";
 
     final response =
     await GeminiService
@@ -147,6 +213,15 @@ class _AIChatScreenState
                       textInputAction:
                           TextInputAction
                               .send,
+                              onChanged: (value) {
+
+  biomarkerService.onTextChanged(
+    previousText,
+    value,
+  );
+
+  previousText = value;
+},
 
                       onSubmitted:
                           (_) async {

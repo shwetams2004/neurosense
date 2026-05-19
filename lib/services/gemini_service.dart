@@ -1,75 +1,72 @@
 import 'dart:convert';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart'
     as http;
 
 class GeminiService {
-  static const String apiKey =
-      "";
 
-  static Future<String> sendMessage(
+  static final apiKey =
+    dotenv.env[
+        "OPENROUTER_API_KEY"] ??
+    "";
+
+  static Future<String>
+      sendMessage(
     String message,
   ) async {
-    try {
-      final url = Uri.parse(
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey",
-);
 
-      final response =
-          await http.post(
-        url,
-        headers: {
-          "Content-Type":
-              "application/json",
-        },
-        body: jsonEncode({
-          "contents": [
-            {
-              "parts": [
-                {
-                  "text":
-                      """
-You are NeuroSense AI.
+    final url = Uri.parse(
+      "https://openrouter.ai/api/v1/chat/completions",
+    );
 
-You help caregivers and clinicians understand:
-- memory decline
-- dementia risk
-- attention issues
-- executive dysfunction
-- cognitive health monitoring
+    final response =
+        await http.post(
 
-Keep answers:
-- short
-- clinically safe
-- helpful
-- non-diagnostic
+      url,
 
-User Question:
-$message
-""",
-                }
-              ]
-            }
-          ]
-        }),
-      );
+      headers: {
 
-      print(response.body);
+        "Authorization":
+            "Bearer $apiKey",
 
-      if (response.statusCode ==
-          200) {
-        final data =
-            jsonDecode(response.body);
+        "Content-Type":
+            "application/json",
+      },
 
-        return data["candidates"][0]
-                    ["content"]["parts"]
-                [0]["text"] ??
-            "No response.";
-      }
+      body: jsonEncode({
 
-      return "API Error: ${response.statusCode}";
-    } catch (e) {
-      return "Error: $e";
+        "model":
+            "deepseek/deepseek-chat",
+
+        "messages": [
+
+          {
+            "role": "system",
+
+            "content":
+                "You are NeuroSense AI, a compassionate cognitive health and caregiver assistant.",
+          },
+
+          {
+            "role": "user",
+
+            "content":
+                message,
+          }
+        ],
+      }),
+    );
+
+    if (response.statusCode ==
+        200) {
+
+      final data =
+          jsonDecode(response.body);
+
+      return data["choices"][0]
+          ["message"]["content"];
     }
+
+    return "API Error: ${response.statusCode}";
   }
 }

@@ -3,20 +3,26 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../storage/local_store.dart';
 
-class TrailMakingScreen extends StatefulWidget {
+class TrailMakingScreen
+    extends StatefulWidget {
+
   const TrailMakingScreen({
     super.key,
   });
 
   @override
-  State<TrailMakingScreen> createState() =>
-      _TrailMakingScreenState();
+  State<TrailMakingScreen>
+      createState() =>
+          _TrailMakingScreenState();
 }
 
 class _TrailMakingScreenState
-    extends State<TrailMakingScreen> {
+    extends State<
+        TrailMakingScreen> {
+
   static const int totalNodes = 12;
 
   List<int> nodes = List.generate(
@@ -38,9 +44,15 @@ class _TrailMakingScreenState
 
   bool saving = false;
 
+  String currentLanguage =
+      "English";
+
   @override
   void initState() {
+
     super.initState();
+
+    loadLanguage();
 
     nodes.shuffle(Random());
 
@@ -48,20 +60,41 @@ class _TrailMakingScreenState
       ..start();
 
     timer = Timer.periodic(
-      const Duration(seconds: 1),
+
+      const Duration(
+        seconds: 1,
+      ),
+
       (_) {
+
         if (!mounted) return;
 
         setState(() {
+
           elapsedSeconds =
-              stopwatch.elapsed.inSeconds;
+              stopwatch
+                  .elapsed
+                  .inSeconds;
         });
       },
     );
   }
 
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+
     timer?.cancel();
 
     stopwatch.stop();
@@ -72,17 +105,24 @@ class _TrailMakingScreenState
   Future<void> onNodeTap(
     int value,
   ) async {
-    if (completed || saving) return;
 
-    if (value == currentTarget) {
+    if (completed ||
+        saving) return;
+
+    if (value ==
+        currentTarget) {
+
       // =========================
       // LAST NODE
       // =========================
 
       if (currentTarget ==
           totalNodes) {
+
         setState(() {
+
           completed = true;
+
           saving = true;
         });
 
@@ -94,11 +134,16 @@ class _TrailMakingScreenState
             await LocalStore
                 .getCurrentUser();
 
-        if (currentUser != null) {
+        if (currentUser !=
+            null) {
+
           await LocalStore
               .saveTrailMakingResult(
+
             currentUser,
+
             elapsedSeconds,
+
             mistakes,
           );
         }
@@ -106,6 +151,7 @@ class _TrailMakingScreenState
         if (!mounted) return;
 
         setState(() {
+
           saving = false;
         });
       }
@@ -115,7 +161,9 @@ class _TrailMakingScreenState
       // =========================
 
       else {
+
         setState(() {
+
           currentTarget++;
         });
       }
@@ -126,7 +174,9 @@ class _TrailMakingScreenState
     // =========================
 
     else {
+
       setState(() {
+
         mistakes++;
       });
     }
@@ -136,22 +186,36 @@ class _TrailMakingScreenState
   Widget build(
     BuildContext context,
   ) {
+
     return Scaffold(
+
       resizeToAvoidBottomInset:
           true,
+
       appBar: AppBar(
-        title: const Text(
-          "Sequencing Activity",
+
+        title: Text(
+
+          AppStrings.text(
+            "trail_title",
+            currentLanguage,
+          ),
         ),
       ),
+
       body: SafeArea(
+
         child: Padding(
+
           padding:
               const EdgeInsets.all(
             20,
           ),
+
           child: completed
+
               ? _resultView()
+
               : _testView(),
         ),
       ),
@@ -159,53 +223,103 @@ class _TrailMakingScreenState
   }
 
   Widget _testView() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 10),
 
-          const Text(
-            "Tap the numbers in order, starting from 1.",
-            style: TextStyle(
+    return SingleChildScrollView(
+
+      child: Column(
+
+        crossAxisAlignment:
+            CrossAxisAlignment
+                .start,
+
+        children: [
+
+          const SizedBox(
+            height: 10,
+          ),
+
+          Text(
+
+            AppStrings.text(
+              "trail_instruction",
+              currentLanguage,
+            ),
+
+            style:
+                const TextStyle(
               fontSize: 18,
             ),
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(
+            height: 14,
+          ),
 
           Text(
-            "Time: $elapsedSeconds s   |   Mistakes: $mistakes",
-            style: const TextStyle(
+
+            "${AppStrings.text(
+  "time_taken",
+  currentLanguage,
+)}: $elapsedSeconds s   |   ${AppStrings.text(
+  "mistakes",
+  currentLanguage,
+)}: $mistakes",
+
+            style:
+                const TextStyle(
+
               fontSize: 16,
-              color: Colors.grey,
+
+              color:
+                  Colors.grey,
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(
+            height: 24,
+          ),
 
           Center(
-            child: ConstrainedBox(
+
+            child:
+                ConstrainedBox(
+
               constraints:
                   const BoxConstraints(
                 maxWidth: 620,
               ),
-              child: GridView.builder(
+
+              child:
+                  GridView.builder(
+
                 shrinkWrap: true,
+
                 physics:
                     const NeverScrollableScrollPhysics(),
+
                 itemCount:
                     nodes.length,
+
                 gridDelegate:
                     const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                  childAspectRatio: 1,
+
+                  crossAxisCount:
+                      3,
+
+                  crossAxisSpacing:
+                      14,
+
+                  mainAxisSpacing:
+                      14,
+
+                  childAspectRatio:
+                      1,
                 ),
+
                 itemBuilder:
-                    (context, index) {
+                    (context,
+                        index) {
+
                   return _node(
                     nodes[index],
                   );
@@ -214,61 +328,89 @@ class _TrailMakingScreenState
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(
+            height: 40,
+          ),
         ],
       ),
     );
   }
 
   Widget _node(int number) {
+
     final bool completedNode =
         number < currentTarget;
 
-
     return Material(
-      color: Colors.transparent,
+
+      color:
+          Colors.transparent,
+
       child: InkWell(
+
         borderRadius:
             BorderRadius.circular(
           18,
         ),
+
         onTap: () async {
+
           await onNodeTap(
             number,
           );
         },
-        child: AnimatedContainer(
+
+        child:
+            AnimatedContainer(
+
           duration:
               const Duration(
             milliseconds: 200,
           ),
+
           alignment:
               Alignment.center,
-          decoration: BoxDecoration(
 
-  color: completedNode
-      ? Colors.green.withOpacity(
-          0.6,
-        )
-      : Colors.indigo.withOpacity(
-          0.12,
-        ),
+          decoration:
+              BoxDecoration(
 
-  borderRadius:
-      BorderRadius.circular(
-    18,
-  ),
+            color:
+                completedNode
 
-  border: Border.all(
-    color: Colors.indigo.shade100,
-    width: 1,
-  ),
-),
+                    ? Colors.green
+                        .withOpacity(
+                        0.6,
+                      )
+
+                    : Colors.indigo
+                        .withOpacity(
+                        0.12,
+                      ),
+
+            borderRadius:
+                BorderRadius.circular(
+              18,
+            ),
+
+            border: Border.all(
+
+              color: Colors
+                  .indigo
+                  .shade100,
+
+              width: 1,
+            ),
+          ),
+
           child: Text(
+
             number.toString(),
+
             style:
                 const TextStyle(
+
               fontSize: 28,
+
               fontWeight:
                   FontWeight.bold,
             ),
@@ -279,26 +421,43 @@ class _TrailMakingScreenState
   }
 
   Widget _resultView() {
+
     return Center(
+
       child: Column(
+
         mainAxisAlignment:
             MainAxisAlignment
                 .center,
+
         children: [
+
           const Icon(
+
             Icons.check_circle,
+
             size: 72,
-            color: Colors.green,
+
+            color:
+                Colors.green,
           ),
 
           const SizedBox(
             height: 24,
           ),
 
-          const Text(
-            "Activity completed",
-            style: TextStyle(
+          Text(
+
+            AppStrings.text(
+              "trail_completed",
+              currentLanguage,
+            ),
+
+            style:
+                const TextStyle(
+
               fontSize: 24,
+
               fontWeight:
                   FontWeight.bold,
             ),
@@ -309,7 +468,12 @@ class _TrailMakingScreenState
           ),
 
           Text(
-            "Time Taken: $elapsedSeconds seconds",
+
+            "${AppStrings.text(
+              "time_taken",
+              currentLanguage,
+            )}: $elapsedSeconds s",
+
             style:
                 const TextStyle(
               fontSize: 18,
@@ -321,7 +485,12 @@ class _TrailMakingScreenState
           ),
 
           Text(
-            "Mistakes: $mistakes",
+
+            "${AppStrings.text(
+  "mistakes",
+  currentLanguage,
+)}: $mistakes",
+
             style:
                 const TextStyle(
               fontSize: 18,
@@ -332,11 +501,18 @@ class _TrailMakingScreenState
             height: 28,
           ),
 
-          const Text(
-            "Your responses have been recorded.",
-            style: TextStyle(
+          Text(
+
+            AppStrings.text(
+              "test_completed",
+              currentLanguage,
+            ),
+
+            style:
+                const TextStyle(
               fontSize: 16,
             ),
+
             textAlign:
                 TextAlign.center,
           ),
@@ -346,16 +522,25 @@ class _TrailMakingScreenState
           ),
 
           SizedBox(
+
             width: 220,
+
             child:
                 ElevatedButton(
+
               onPressed: () {
+
                 Navigator.pop(
                   context,
                 );
               },
-              child: const Text(
-                "Return to Home",
+
+              child: Text(
+
+                AppStrings.text(
+                  "return_home",
+                  currentLanguage,
+                ),
               ),
             ),
           ),

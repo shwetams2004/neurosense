@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 
+import '../../localization/app_strings.dart';
 import '../../storage/local_store.dart';
 
 class SpeechSampleScreen
     extends StatefulWidget {
+
   const SpeechSampleScreen({
     super.key,
   });
@@ -18,28 +20,62 @@ class SpeechSampleScreen
 class _SpeechSampleScreenState
     extends State<
         SpeechSampleScreen> {
+
   final Record recorder = Record();
 
   bool recording = false;
 
-  Future<void> startRecording() async {
-    if (await recorder.hasPermission()) {
+  String currentLanguage =
+      "English";
+
+  @override
+  void initState() {
+
+    super.initState();
+
+    loadLanguage();
+  }
+
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> startRecording()
+      async {
+
+    if (await recorder
+        .hasPermission()) {
+
       await recorder.start();
 
       if (mounted) {
+
         setState(() {
+
           recording = true;
         });
       }
     }
   }
 
-  Future<void> stopRecording() async {
+  Future<void> stopRecording()
+      async {
+
     final path =
         await recorder.stop();
 
     if (mounted) {
+
       setState(() {
+
         recording = false;
       });
     }
@@ -53,22 +89,36 @@ class _SpeechSampleScreenState
     }
 
     if (path != null) {
+
       await LocalStore
           .saveSpeechMetrics(
+
         userId: currentUser,
+
         metrics: {
+
           "pause_ratio": 0.32,
+
           "speech_rate": 110,
+
           "hesitation_events": 5,
         },
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context)
+
+        ScaffoldMessenger.of(
+                context)
             .showSnackBar(
-          const SnackBar(
+
+          SnackBar(
+
             content: Text(
-              "Speech sample saved successfully.",
+
+              AppStrings.text(
+                "speech_completed",
+                currentLanguage,
+              ),
             ),
           ),
         );
@@ -76,65 +126,121 @@ class _SpeechSampleScreenState
     }
 
     if (mounted) {
-      Navigator.pop(context);
+
+      Navigator.pop(
+        context,
+      );
     }
   }
 
   @override
   Widget build(
       BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text(
-          "Speech Activity",
+
+        title: Text(
+
+          AppStrings.text(
+            "speech_title",
+            currentLanguage,
+          ),
         ),
       ),
 
       body: Padding(
+
         padding:
-            const EdgeInsets.all(24),
+            const EdgeInsets.all(
+          24,
+        ),
 
         child: Column(
+
           children: [
-            const Text(
-              "Please describe the picture shown below for 30 seconds.",
-              style: TextStyle(
+
+            Text(
+
+              AppStrings.text(
+                "speech_instruction",
+                currentLanguage,
+              ),
+
+              style:
+                  const TextStyle(
                 fontSize: 18,
               ),
             ),
 
             const SizedBox(
-                height: 24),
+              height: 24,
+            ),
 
             Container(
+
               height: 180,
 
-              color:
-                  Colors.grey.shade300,
+              decoration:
+                  BoxDecoration(
+
+                color:
+                    Colors.grey
+                        .shade300,
+
+                borderRadius:
+                    BorderRadius.circular(
+                  16,
+                ),
+              ),
 
               child: const Center(
+
                 child: Text(
+
                   "Picture Placeholder",
+
+                  style:
+                      TextStyle(
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(
+              height: 40,
+            ),
 
             SizedBox(
+
               width:
                   double.infinity,
 
               child:
                   ElevatedButton(
-                onPressed: recording
-                    ? stopRecording
-                    : startRecording,
+
+                onPressed:
+                    recording
+
+                        ? stopRecording
+
+                        : startRecording,
 
                 child: Text(
+
                   recording
-                      ? "Stop Recording"
-                      : "Start Recording",
+
+                      ? AppStrings.text(
+                          "stop_recording",
+                          currentLanguage,
+                        )
+
+                      : AppStrings.text(
+                          "start_recording",
+                          currentLanguage,
+                        ),
                 ),
               ),
             ),

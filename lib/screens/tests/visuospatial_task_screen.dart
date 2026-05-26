@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../storage/local_store.dart';
 
 class VisuospatialTaskScreen
     extends StatefulWidget {
+
   const VisuospatialTaskScreen({
     super.key,
   });
@@ -17,11 +19,17 @@ class VisuospatialTaskScreen
 class _VisuospatialTaskScreenState
     extends State<
         VisuospatialTaskScreen> {
+
   final List<String> targetOrder = [
+
     "circle",
+
     "square",
+
     "triangle",
+
     "star",
+
     "hexagon",
   ];
 
@@ -33,15 +41,24 @@ class _VisuospatialTaskScreenState
 
   int taps = 0;
 
-  late DateTime startTime;
-
   bool showingTarget = true;
 
   bool finished = false;
 
+  String currentLanguage =
+      "English";
+
+  final List<String>
+      selectedShapes = [];
+
+  late DateTime startTime;
+
   @override
   void initState() {
+
     super.initState();
+
+    loadLanguage();
 
     shuffled =
         List.from(targetOrder)
@@ -50,43 +67,81 @@ class _VisuospatialTaskScreenState
     startTime = DateTime.now();
 
     Future.delayed(
-      const Duration(seconds: 4),
+
+      const Duration(
+        seconds: 4,
+      ),
+
       () {
+
         if (!mounted) return;
 
         setState(() {
+
           showingTarget = false;
         });
       },
     );
   }
 
-  void handleTap(String shape) {
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void handleTap(
+    String shape,
+  ) {
+
     if (finished) return;
 
     setState(() {
+
       taps++;
 
       if (shape ==
-          targetOrder[currentIndex]) {
+          targetOrder[
+              currentIndex]) {
+
+        selectedShapes.add(
+          shape,
+        );
+
         currentIndex++;
+
       } else {
+
         errors++;
       }
     });
 
     if (currentIndex ==
         targetOrder.length) {
-      finished = true;
+
+      setState(() {
+
+        finished = true;
+      });
 
       finishTask();
     }
   }
 
-  Future<void> finishTask() async {
+  Future<void> finishTask()
+      async {
+
     final seconds =
         DateTime.now()
-            .difference(startTime)
+            .difference(
+              startTime,
+            )
             .inSeconds;
 
     final currentUser =
@@ -99,31 +154,64 @@ class _VisuospatialTaskScreenState
 
     await LocalStore
         .saveVisuospatialResult(
+
       userId: currentUser,
+
       seconds: seconds,
+
       errors: errors,
+
       taps: taps,
     );
 
     if (mounted) {
+
       ScaffoldMessenger.of(context)
           .showSnackBar(
+
         SnackBar(
+
+          duration:
+              const Duration(
+            seconds: 3,
+          ),
+
           content: Text(
-            "Visuospatial activity saved.\nErrors: $errors",
+
+            "${AppStrings.text(
+              "test_completed",
+              currentLanguage,
+            )}\n"
+
+            "${AppStrings.text(
+              "score",
+              currentLanguage,
+            )}: ${targetOrder.length - errors}/${targetOrder.length}\n"
+
+            "${AppStrings.text(
+              "errors",
+              currentLanguage,
+            )}: $errors",
           ),
         ),
       );
     }
 
     if (mounted) {
+
       Future.delayed(
+
         const Duration(
-            milliseconds: 800),
+          seconds: 3,
+        ),
+
         () {
+
           if (!mounted) return;
 
-          Navigator.pop(context);
+          Navigator.pop(
+            context,
+          );
         },
       );
     }
@@ -131,39 +219,59 @@ class _VisuospatialTaskScreenState
 
   Widget shapeButton(
       String shape) {
+
     return Material(
+
       color: Colors.transparent,
+
       child: InkWell(
+
         onTap: () =>
             handleTap(shape),
 
         borderRadius:
             BorderRadius.circular(
-                12),
+          12,
+        ),
 
         child: Container(
+
           width: 80,
+
           height: 80,
 
           margin:
-              const EdgeInsets.all(8),
+              const EdgeInsets.all(
+            8,
+          ),
 
           decoration: BoxDecoration(
+
             border: Border.all(
-              color: Colors.indigo,
+              color:
+                  Colors.indigo,
             ),
 
             borderRadius:
-                BorderRadius.circular(
-                    12),
+                BorderRadius
+                    .circular(
+              12,
+            ),
 
-            color: Colors.white,
+            color: selectedShapes
+                    .contains(shape)
+
+                ? Colors.green
+                    .shade200
+
+                : Colors.white,
           ),
 
           alignment:
               Alignment.center,
 
           child: Text(
+
             shape.toUpperCase(),
 
             style:
@@ -184,23 +292,44 @@ class _VisuospatialTaskScreenState
   @override
   Widget build(
       BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text(
-          "Shape Sequencing Activity",
+
+        title: Text(
+
+          AppStrings.text(
+            "shape_title",
+            currentLanguage,
+          ),
         ),
       ),
 
       body: Padding(
+
         padding:
-            const EdgeInsets.all(24),
+            const EdgeInsets.all(
+          24,
+        ),
 
         child: Column(
+
           children: [
+
             Text(
+
               showingTarget
-                  ? "Remember this order"
-                  : "Tap the shapes in the same order",
+
+                  ? AppStrings.text(
+  "remember_order",
+  currentLanguage,
+)
+
+                  : AppStrings.text(
+                      "shape_instruction",
+                      currentLanguage,
+                    ),
 
               style:
                   const TextStyle(
@@ -212,11 +341,17 @@ class _VisuospatialTaskScreenState
             ),
 
             const SizedBox(
-                height: 16),
+              height: 16,
+            ),
 
             if (!showingTarget)
+
               Text(
-                "Progress: $currentIndex / ${targetOrder.length}",
+
+                "${AppStrings.text(
+  "progress",
+  currentLanguage,
+)}: $currentIndex / ${targetOrder.length}",
 
                 style:
                     const TextStyle(
@@ -226,43 +361,123 @@ class _VisuospatialTaskScreenState
               ),
 
             const SizedBox(
-                height: 20),
+              height: 20,
+            ),
 
             Expanded(
+
               child: Center(
+
                 child: Wrap(
+
                   alignment:
                       WrapAlignment
                           .center,
 
                   children:
                       (showingTarget
+
                               ? targetOrder
+
                               : shuffled)
+
                           .map(
-                              shapeButton)
+                            shapeButton,
+                          )
+
                           .toList(),
                 ),
               ),
             ),
 
             if (finished)
-              const Padding(
+
+              Padding(
+
                 padding:
-                    EdgeInsets.only(
-                        top: 12),
+                    const EdgeInsets.only(
+                  top: 12,
+                ),
 
-                child: Text(
-                  "Completed",
+                child: Column(
 
-                  style: TextStyle(
-                    fontSize: 16,
-                    color:
-                        Colors.green,
-                    fontWeight:
-                        FontWeight
-                            .bold,
-                  ),
+                  children: [
+
+                    Text(
+
+                      AppStrings.text(
+                        "test_completed",
+                        currentLanguage,
+                      ),
+
+                      style:
+                          const TextStyle(
+                        fontSize: 20,
+                        color:
+                            Colors.green,
+                        fontWeight:
+                            FontWeight
+                                .bold,
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 10,
+                    ),
+
+                    Text(
+
+                      "${AppStrings.text(
+                        "score",
+                        currentLanguage,
+                      )}: ${targetOrder.length - errors} / ${targetOrder.length}",
+
+                      style:
+                          const TextStyle(
+                        fontSize: 18,
+                        fontWeight:
+                            FontWeight
+                                .w600,
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 6,
+                    ),
+
+                    Text(
+
+                      "${AppStrings.text(
+                        "errors",
+                        currentLanguage,
+                      )}: $errors",
+
+                      style:
+                          const TextStyle(
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 6,
+                    ),
+
+                    Text(
+
+                      "${AppStrings.text(
+                        "correct_sequences",
+                        currentLanguage,
+                      )}: $currentIndex",
+
+                      style:
+                          const TextStyle(
+                        fontSize: 16,
+                        color:
+                            Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],

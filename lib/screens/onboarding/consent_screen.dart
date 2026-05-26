@@ -1,45 +1,124 @@
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
+import '../../storage/local_store.dart';
+
 import 'user_selection_screen.dart';
 
-class ConsentScreen extends StatelessWidget {
-  const ConsentScreen({super.key});
+class ConsentScreen
+    extends StatefulWidget {
+
+  const ConsentScreen({
+    super.key,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  State<ConsentScreen>
+      createState() =>
+          _ConsentScreenState();
+}
+
+class _ConsentScreenState
+    extends State<ConsentScreen> {
+
+  String currentLanguage =
+      "English";
+
+  @override
+  void initState() {
+
+    super.initState();
+
+    loadLanguage();
+  }
+
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(
+      BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text("Before We Begin"),
-        automaticallyImplyLeading: false,
+
+        title: Text(
+
+          AppStrings.text(
+            "before_begin",
+            currentLanguage,
+          ),
+        ),
+
+        automaticallyImplyLeading:
+            false,
       ),
+
       body: Padding(
-        padding: const EdgeInsets.all(24),
+
+        padding:
+            const EdgeInsets.all(
+          24,
+        ),
+
         child: Column(
+
           children: [
-            const Text(
-              "NeuroSense is a pre-clinical cognitive tracking tool.\n\n"
-              "It does NOT diagnose Alzheimer’s disease or any medical condition.\n\n"
-              "The purpose of this app is to track changes over time and help decide "
-              "when a clinical evaluation may be useful.\n\n"
-              "Data will be stored securely and shared only with your permission.",
-              style: TextStyle(fontSize: 18),
+
+            Text(
+
+              AppStrings.text(
+                "consent_description",
+                currentLanguage,
+              ),
+
+              style:
+                  const TextStyle(
+                fontSize: 18,
+              ),
             ),
 
             const Spacer(),
 
             SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
+
+              width:
+                  double.infinity,
+
+              child:
+                  ElevatedButton(
+
                 onPressed: () {
+
                   Navigator.pushReplacement(
+
                     context,
+
                     MaterialPageRoute(
+
                       builder: (_) =>
                           const UserSelectionScreen(),
                     ),
                   );
                 },
-                child: const Text("I Understand"),
+
+                child: Text(
+
+                  AppStrings.text(
+                    "i_understand",
+                    currentLanguage,
+                  ),
+                ),
               ),
             ),
           ],

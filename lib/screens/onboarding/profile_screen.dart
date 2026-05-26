@@ -1,194 +1,477 @@
 import 'dart:convert';
-import '../../services/firestore_service.dart';
-import 'package:flutter/material.dart';
 
-import '../../storage/local_store.dart';
-import '../home/home_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../localization/app_strings.dart';
+import '../../services/firestore_service.dart';
+import '../../storage/local_store.dart';
+
+import '../home/home_screen.dart';
+
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+  });
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() =>
+      _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController nameController =
+class _ProfileScreenState
+    extends State<ProfileScreen> {
+
+  final TextEditingController
+      nameController =
       TextEditingController();
 
-  final TextEditingController ageController =
+  final TextEditingController
+      ageController =
       TextEditingController();
 
-  final TextEditingController caregiverController =
+  final TextEditingController
+      caregiverController =
       TextEditingController();
 
-  final TextEditingController relationshipController =
+  final TextEditingController
+      relationshipController =
       TextEditingController();
 
   String? selectedGender;
 
-  bool isValid() {
-    return nameController.text.isNotEmpty &&
-        ageController.text.isNotEmpty &&
-        selectedGender != null &&
-        caregiverController.text.isNotEmpty &&
-        relationshipController.text.isNotEmpty;
+  String currentLanguage =
+      "English";
+
+  @override
+  void initState() {
+
+    super.initState();
+
+    loadLanguage();
   }
 
-  Future<void> saveUserProfile() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool isValid() {
+
+    return nameController
+            .text
+            .isNotEmpty &&
+        ageController
+            .text
+            .isNotEmpty &&
+        selectedGender !=
+            null &&
+        caregiverController
+            .text
+            .isNotEmpty &&
+        relationshipController
+            .text
+            .isNotEmpty;
+  }
+
+  Future<void> saveUserProfile()
+      async {
+
+    final prefs =
+        await SharedPreferences
+            .getInstance();
 
     final userId =
         "${nameController.text.trim().replaceAll(" ", "_").toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}";
 
     final userData = {
+
       "userId": userId,
-      "name": nameController.text.trim(),
-      "age": ageController.text.trim(),
-      "gender": selectedGender,
-      "caregiver": caregiverController.text.trim(),
+
+      "name":
+          nameController.text
+              .trim(),
+
+      "age":
+          ageController.text
+              .trim(),
+
+      "gender":
+          selectedGender,
+
+      "caregiver":
+          caregiverController
+              .text
+              .trim(),
+
       "relationship":
-          relationshipController.text.trim(),
+          relationshipController
+              .text
+              .trim(),
     };
 
     final existingUsers =
-        prefs.getStringList("user_profiles") ?? [];
+        prefs.getStringList(
+              "user_profiles",
+            ) ??
+            [];
 
-    existingUsers.add(jsonEncode(userData));
+    existingUsers.add(
+      jsonEncode(userData),
+    );
 
     await prefs.setStringList(
       "user_profiles",
       existingUsers,
     );
 
-    await LocalStore.setCurrentUser(userId);
+    await LocalStore
+        .setCurrentUser(
+      userId,
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context) {
+
     return Scaffold(
+
       appBar: AppBar(
-        title: const Text("Create User Profile"),
-        automaticallyImplyLeading: false,
+
+        title: Text(
+
+          AppStrings.text(
+            "create_profile",
+            currentLanguage,
+          ),
+        ),
+
+        automaticallyImplyLeading:
+            false,
       ),
+
       body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
+
+        padding:
+            const EdgeInsets.all(
+          24,
+        ),
+
+        child:
+            SingleChildScrollView(
+
           child: Column(
+
             crossAxisAlignment:
-                CrossAxisAlignment.start,
+                CrossAxisAlignment
+                    .start,
+
             children: [
-              const Text(
-                "This helps personalize cognitive tracking.",
-                style: TextStyle(fontSize: 18),
-              ),
 
-              const SizedBox(height: 24),
+              Text(
 
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: "Full Name",
-                  border: OutlineInputBorder(),
+                AppStrings.text(
+                  "personalize_tracking",
+                  currentLanguage,
                 ),
-                onChanged: (_) => setState(() {}),
+
+                style:
+                    const TextStyle(
+                  fontSize: 18,
+                ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(
+                height: 24,
+              ),
+
+              // =========================
+              // NAME
+              // =========================
 
               TextField(
-                controller: ageController,
+
+                controller:
+                    nameController,
+
+                decoration:
+                    InputDecoration(
+
+                  labelText:
+                      AppStrings.text(
+                    "full_name",
+                    currentLanguage,
+                  ),
+
+                  border:
+                      const OutlineInputBorder(),
+                ),
+
+                onChanged: (_) {
+                  setState(() {});
+                },
+              ),
+
+              const SizedBox(
+                height: 20,
+              ),
+
+              // =========================
+              // AGE
+              // =========================
+
+              TextField(
+
+                controller:
+                    ageController,
+
                 keyboardType:
-                    TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "Age",
-                  border: OutlineInputBorder(),
+                    TextInputType
+                        .number,
+
+                decoration:
+                    InputDecoration(
+
+                  labelText:
+                      AppStrings.text(
+                    "age",
+                    currentLanguage,
+                  ),
+
+                  border:
+                      const OutlineInputBorder(),
                 ),
-                onChanged: (_) => setState(() {}),
+
+                onChanged: (_) {
+                  setState(() {});
+                },
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(
+                height: 20,
+              ),
 
-              DropdownButtonFormField<String>(
-                value: selectedGender,
-                decoration: const InputDecoration(
-                  labelText: "Gender",
-                  border: OutlineInputBorder(),
+              // =========================
+              // GENDER
+              // =========================
+
+              DropdownButtonFormField<
+                  String>(
+
+                value:
+                    selectedGender,
+
+                decoration:
+                    InputDecoration(
+
+                  labelText:
+                      AppStrings.text(
+                    "gender",
+                    currentLanguage,
+                  ),
+
+                  border:
+                      const OutlineInputBorder(),
                 ),
-                items: const [
+
+                items: [
+
                   DropdownMenuItem(
+
                     value: "Male",
-                    child: Text("Male"),
+
+                    child: Text(
+
+                      AppStrings.text(
+                        "male",
+                        currentLanguage,
+                      ),
+                    ),
                   ),
+
                   DropdownMenuItem(
+
                     value: "Female",
-                    child: Text("Female"),
+
+                    child: Text(
+
+                      AppStrings.text(
+                        "female",
+                        currentLanguage,
+                      ),
+                    ),
                   ),
+
                   DropdownMenuItem(
+
                     value: "Other",
-                    child: Text("Other"),
+
+                    child: Text(
+
+                      AppStrings.text(
+                        "other",
+                        currentLanguage,
+                      ),
+                    ),
                   ),
                 ],
+
                 onChanged: (value) {
+
                   setState(() {
-                    selectedGender = value;
+
+                    selectedGender =
+                        value;
                   });
                 },
               ),
 
-              const SizedBox(height: 20),
-
-              TextField(
-                controller: caregiverController,
-                decoration: const InputDecoration(
-                  labelText: "Caregiver Name",
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (_) => setState(() {}),
+              const SizedBox(
+                height: 20,
               ),
 
-              const SizedBox(height: 20),
+              // =========================
+              // CAREGIVER NAME
+              // =========================
 
               TextField(
+
+                controller:
+                    caregiverController,
+
+                decoration:
+                    InputDecoration(
+
+                  labelText:
+                      AppStrings.text(
+                    "caregiver_name",
+                    currentLanguage,
+                  ),
+
+                  border:
+                      const OutlineInputBorder(),
+                ),
+
+                onChanged: (_) {
+                  setState(() {});
+                },
+              ),
+
+              const SizedBox(
+                height: 20,
+              ),
+
+              // =========================
+              // RELATIONSHIP
+              // =========================
+
+              TextField(
+
                 controller:
                     relationshipController,
-                decoration: const InputDecoration(
+
+                decoration:
+                    InputDecoration(
+
                   labelText:
-                      "Relationship to Caregiver",
-                  border: OutlineInputBorder(),
+                      AppStrings.text(
+                    "relationship_caregiver",
+                    currentLanguage,
+                  ),
+
+                  border:
+                      const OutlineInputBorder(),
                 ),
-                onChanged: (_) => setState(() {}),
+
+                onChanged: (_) {
+                  setState(() {});
+                },
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(
+                height: 40,
+              ),
+
+              // =========================
+              // CONTINUE BUTTON
+              // =========================
 
               SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: isValid()
-    ? () async {
-        await FirestoreService.createPatient(
-          name: nameController.text.trim(),
-          age: int.parse(ageController.text),
-          gender: selectedGender!,
-          caregiver:
-              caregiverController.text.trim(),
-          relationship:
-              relationshipController.text.trim(),
-        );
 
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const HomeScreen(),
-            ),
-          );
-        }
-      }
-    : null,
-                  child: const Text("Continue"),
+                width:
+                    double.infinity,
+
+                child:
+                    ElevatedButton(
+
+                  onPressed:
+                      isValid()
+
+                          ? () async {
+
+                              await saveUserProfile();
+
+                              await FirestoreService
+                                  .createPatient(
+
+                                name:
+                                    nameController
+                                        .text
+                                        .trim(),
+
+                                age:
+                                    int.parse(
+                                  ageController
+                                      .text,
+                                ),
+
+                                gender:
+                                    selectedGender!,
+
+                                caregiver:
+                                    caregiverController
+                                        .text
+                                        .trim(),
+
+                                relationship:
+                                    relationshipController
+                                        .text
+                                        .trim(),
+                              );
+
+                              if (mounted) {
+
+                                Navigator.pushReplacement(
+
+                                  context,
+
+                                  MaterialPageRoute(
+
+                                    builder:
+                                        (_) =>
+                                            const HomeScreen(),
+                                  ),
+                                );
+                              }
+                            }
+
+                          : null,
+
+                  child: Text(
+
+                    AppStrings.text(
+                      "continue",
+                      currentLanguage,
+                    ),
+                  ),
                 ),
               ),
             ],

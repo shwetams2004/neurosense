@@ -2,10 +2,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../storage/local_store.dart';
 
 class VigilanceTestScreen
     extends StatefulWidget {
+
   const VigilanceTestScreen({
     super.key,
   });
@@ -36,6 +38,9 @@ class _VigilanceTestScreenState
 
   int falseAlarms = 0;
 
+  String currentLanguage =
+      "English";
+
   final List<int> reactionTimes =
       [];
 
@@ -43,17 +48,34 @@ class _VigilanceTestScreenState
 
   @override
   void initState() {
+
     super.initState();
 
+    loadLanguage();
+
     _runTrial();
+  }
+
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   // =========================
   // RUN TRIALS
   // =========================
 
-  Future<void> _runTrial() async {
+  Future<void> _runTrial()
+      async {
 
+    // TEST COMPLETE
     if (currentTrial >=
         totalTrials) {
 
@@ -68,7 +90,9 @@ class _VigilanceTestScreenState
       return;
     }
 
+    // RANDOM WAIT
     await Future.delayed(
+
       Duration(
         seconds:
             Random().nextInt(3) +
@@ -78,6 +102,7 @@ class _VigilanceTestScreenState
 
     if (!mounted) return;
 
+    // SHOW STIMULUS
     setState(() {
 
       showTarget =
@@ -91,12 +116,14 @@ class _VigilanceTestScreenState
       currentTrial++;
     });
 
+    // SHOW FOR 1 SECOND
     await Future.delayed(
       const Duration(
         seconds: 1,
       ),
     );
 
+    // MISSED TARGET
     if (showTarget &&
         !responded) {
 
@@ -105,6 +132,7 @@ class _VigilanceTestScreenState
 
     if (!mounted) return;
 
+    // HIDE STIMULUS
     setState(() {
 
       showTarget = false;
@@ -112,16 +140,15 @@ class _VigilanceTestScreenState
       stimulusTime = null;
     });
 
-    if (mounted &&
-        currentTrial <
-            totalTrials) {
+    // NEXT TRIAL
+    if (mounted) {
 
       _runTrial();
     }
   }
 
   // =========================
-  // TAP RESPONSE
+  // USER TAP
   // =========================
 
   void _onTap() {
@@ -140,6 +167,7 @@ class _VigilanceTestScreenState
         )
         .inMilliseconds;
 
+    // CORRECT HIT
     if (showTarget) {
 
       hits++;
@@ -148,6 +176,7 @@ class _VigilanceTestScreenState
 
     } else {
 
+      // WRONG TAP
       falseAlarms++;
     }
   }
@@ -156,7 +185,10 @@ class _VigilanceTestScreenState
   // FINISH TEST
   // =========================
 
-  Future<void> _finish() async {
+  Future<void> _finish()
+      async {
+
+    if (completed) return;
 
     final avgRt =
         reactionTimes.isEmpty
@@ -170,22 +202,28 @@ class _VigilanceTestScreenState
         await LocalStore
             .getCurrentUser();
 
-    if (currentUser == null) {
-      return;
-    }
+    if (currentUser != null) {
 
-    await LocalStore
-        .saveVigilanceResult(
-      userId: currentUser,
-      hits: hits,
-      misses: misses,
-      falseAlarms: falseAlarms,
-      avgRtMs: avgRt,
-    );
+      await LocalStore
+          .saveVigilanceResult(
+
+        userId: currentUser,
+
+        hits: hits,
+
+        misses: misses,
+
+        falseAlarms:
+            falseAlarms,
+
+        avgRtMs: avgRt,
+      );
+    }
 
     if (!mounted) return;
 
     setState(() {
+
       completed = true;
     });
   }
@@ -201,8 +239,13 @@ class _VigilanceTestScreenState
     return Scaffold(
 
       appBar: AppBar(
-        title: const Text(
-          "Vigilance Task",
+
+        title: Text(
+
+          AppStrings.text(
+            "vigilance_title",
+            currentLanguage,
+          ),
         ),
       ),
 
@@ -215,7 +258,9 @@ class _VigilanceTestScreenState
           onTap: _onTap,
 
           child: completed
+
               ? _resultView()
+
               : Center(
 
                   child: Column(
@@ -226,21 +271,25 @@ class _VigilanceTestScreenState
 
                     children: [
 
-                      const Padding(
+                      Padding(
 
                         padding:
-                            EdgeInsets.symmetric(
+                            const EdgeInsets.symmetric(
                           horizontal: 24,
                         ),
 
                         child: Text(
 
-                          "Tap the screen ONLY when the black dot appears.\nDo not tap when the '+' sign is shown.",
+                          AppStrings.text(
+                            "vigilance_instruction",
+                            currentLanguage,
+                          ),
 
                           textAlign:
                               TextAlign.center,
 
-                          style: TextStyle(
+                          style:
+                              const TextStyle(
                             fontSize: 16,
                             fontWeight:
                                 FontWeight.w500,
@@ -260,21 +309,24 @@ class _VigilanceTestScreenState
 
                         style:
                             const TextStyle(
-                          fontSize: 64,
+                          fontSize: 72,
                         ),
                       ),
 
                       const SizedBox(
-                        height: 20,
+                        height: 24,
                       ),
 
                       Text(
 
-                        "Trial $currentTrial / $totalTrials",
+                        "${AppStrings.text(
+                          "trial",
+                          currentLanguage,
+                        )} $currentTrial / $totalTrials",
 
                         style:
                             const TextStyle(
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
                     ],
@@ -301,105 +353,151 @@ class _VigilanceTestScreenState
 
     return Center(
 
-      child: Column(
+      child: Padding(
 
-        mainAxisAlignment:
-            MainAxisAlignment.center,
+        padding:
+            const EdgeInsets.all(
+          24,
+        ),
 
-        children: [
+        child: Column(
 
-          const Icon(
-            Icons.check_circle,
-            size: 72,
-            color: Colors.green,
-          ),
+          mainAxisAlignment:
+              MainAxisAlignment.center,
 
-          const SizedBox(
-            height: 24,
-          ),
+          children: [
 
-          const Text(
+            const Icon(
 
-            "Vigilance Test Completed",
+              Icons.check_circle,
 
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight:
-                  FontWeight.bold,
+              size: 80,
+
+              color: Colors.green,
             ),
-          ),
 
-          const SizedBox(
-            height: 24,
-          ),
-
-          Text(
-            "Correct Hits: $hits",
-
-            style: const TextStyle(
-              fontSize: 18,
+            const SizedBox(
+              height: 24,
             ),
-          ),
 
-          const SizedBox(
-            height: 8,
-          ),
+            Text(
 
-          Text(
-            "Misses: $misses",
+              AppStrings.text(
+                "test_completed",
+                currentLanguage,
+              ),
 
-            style: const TextStyle(
-              fontSize: 18,
-            ),
-          ),
+              textAlign:
+                  TextAlign.center,
 
-          const SizedBox(
-            height: 8,
-          ),
-
-          Text(
-            "False Alarms: $falseAlarms",
-
-            style: const TextStyle(
-              fontSize: 18,
-            ),
-          ),
-
-          const SizedBox(
-            height: 8,
-          ),
-
-          Text(
-            "Average Reaction Time: ${avgRt} ms",
-
-            style: const TextStyle(
-              fontSize: 18,
-            ),
-          ),
-
-          const SizedBox(
-            height: 32,
-          ),
-
-          SizedBox(
-
-            width: 220,
-
-            child: ElevatedButton(
-
-              onPressed: () {
-
-                Navigator.pop(
-                  context,
-                );
-              },
-
-              child: const Text(
-                "Return to Home",
+              style:
+                  const TextStyle(
+                fontSize: 26,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(
+              height: 30,
+            ),
+
+            Text(
+
+              "${AppStrings.text(
+                "correct_taps",
+                currentLanguage,
+              )}: $hits",
+
+              style:
+                  const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+
+            const SizedBox(
+              height: 10,
+            ),
+
+            Text(
+
+              "${AppStrings.text(
+  "misses",
+  currentLanguage,
+)}: $misses",
+
+              style:
+                  const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+
+            const SizedBox(
+              height: 10,
+            ),
+
+            Text(
+
+              "${AppStrings.text(
+                "wrong_taps",
+                currentLanguage,
+              )}: $falseAlarms",
+
+              style:
+                  const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+
+            const SizedBox(
+              height: 10,
+            ),
+
+            Text(
+
+              "${AppStrings.text(
+  "average_reaction_time",
+  currentLanguage,
+)}:\n${avgRt} ms",
+
+              textAlign:
+                  TextAlign.center,
+
+              style:
+                  const TextStyle(
+                fontSize: 20,
+              ),
+            ),
+
+            const SizedBox(
+              height: 40,
+            ),
+
+            SizedBox(
+
+              width: 240,
+
+              child:
+                  ElevatedButton(
+
+                onPressed: () {
+
+                  Navigator.pop(
+                    context,
+                  );
+                },
+
+                child: Text(
+
+                  AppStrings.text(
+                    "return_home",
+                    currentLanguage,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

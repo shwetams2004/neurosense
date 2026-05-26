@@ -48,9 +48,9 @@ class RiskEngine {
       // NEED MINIMUM DATA
       // =========================
 
-      if (memory.length < 3 ||
-          digit.length < 3 ||
-          trail.length < 3) {
+      if (memory.isEmpty &&
+    digit.isEmpty &&
+    trail.isEmpty) {
         return {
           "risk_level":
               "insufficient_data",
@@ -157,45 +157,79 @@ class RiskEngine {
   // =========================
 
   static List<double> toZTimeline(
-    List<int> values, {
-    bool inverse = false,
-  }) {
-    if (values.isEmpty) {
-      return [];
-    }
+  List<num> values, {
+  bool inverse = false,
+}) {
 
-    final mean =
-        values.reduce(
-              (a, b) => a + b,
-            ) /
-            values.length;
-
-    final variance = values
-            .map(
-              (v) => pow(
-                v - mean,
-                2,
-              ),
-            )
-            .reduce(
-              (a, b) => a + b,
-            ) /
-        values.length;
-
-    final sd = sqrt(variance);
-
-    if (sd == 0) {
-      return List.filled(
-        values.length,
-        0,
-      );
-    }
-
-    return values.map((v) {
-      final z =
-          (v - mean) / sd;
-
-      return inverse ? -z : z;
-    }).toList();
+  if (values.isEmpty) {
+    return [];
   }
+
+  // =========================
+  // SINGLE SESSION SUPPORT
+  // =========================
+
+  if (values.length == 1) {
+
+    double value =
+        values.first.toDouble();
+
+    // normalize roughly to z-like range
+
+    double normalized =
+        (value / 10.0)
+            .clamp(0.0, 1.0);
+
+    double z =
+        (normalized * 6) - 3;
+
+    if (inverse) {
+      z = -z;
+    }
+
+    return [z];
+  }
+
+  // =========================
+  // NORMAL MULTI-SESSION
+  // =========================
+
+  double mean =
+      values.reduce(
+            (a, b) => a + b,
+          ) /
+          values.length;
+
+  double variance = values
+          .map(
+            (e) =>
+                (e - mean) *
+                (e - mean),
+          )
+          .reduce((a, b) => a + b) /
+      values.length;
+
+  double std =
+      sqrt(variance);
+
+  if (std == 0) {
+    return List.generate(
+      values.length,
+      (_) => 0,
+    );
+  }
+
+  return values.map((e) {
+
+    double z =
+        (e - mean) / std;
+
+    if (inverse) {
+      z = -z;
+    }
+
+    return z.clamp(-3.0, 3.0).toDouble();
+
+  }).toList();
+}
 }

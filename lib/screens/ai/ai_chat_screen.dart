@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../services/gemini_service.dart';
 import '../../services/typing_biomarker_service.dart';
 import '../../storage/local_store.dart';
+import '../../localization/app_strings.dart';
 class AIChatScreen
     extends StatefulWidget {
   const AIChatScreen({
@@ -22,27 +24,82 @@ class _AIChatScreenState
       TextEditingController();
 
   final List<Map<String, dynamic>>
-      messages = [
-    {
-      "role": "ai",
-      "text":
-          "Hello. I am the NeuroSense AI caregiver assistant.\n\nHow can I help you today?",
-    },
-  ];
+    messages = [];
 
   bool typing = false;
+
+  String currentLanguage =
+    "English";
 
   final TypingBiomarkerService
     biomarkerService =
         TypingBiomarkerService();
 
 String previousText = "";
+final ScrollController
+    scrollController =
+        ScrollController();
 @override
 void initState() {
 
   super.initState();
 
+  initializeChat();
+
   biomarkerService.startSession();
+}
+
+Future<void> initializeChat()
+async {
+
+  currentLanguage =
+      await LocalStore
+          .getLanguage();
+
+  String welcomeMessage =
+      AppStrings.text(
+    "ai_welcome",
+    currentLanguage,
+  );
+
+  setState(() {
+
+    messages.add({
+
+      "role": "ai",
+
+      "text":
+          welcomeMessage,
+    });
+  });
+}
+
+void scrollToBottom() {
+
+  Future.delayed(
+    const Duration(
+      milliseconds: 100,
+    ),
+    () {
+
+      if (scrollController
+          .hasClients) {
+
+        scrollController.animateTo(
+
+          scrollController
+              .position
+              .maxScrollExtent,
+
+          duration: const Duration(
+            milliseconds: 300,
+          ),
+
+          curve: Curves.easeOut,
+        );
+      }
+    },
+  );
 }
 
   Future<void> sendMessage() async {
@@ -59,6 +116,7 @@ void initState() {
 
       typing = true;
     });
+    scrollToBottom();
 
     final biomarkerData =
     biomarkerService.endSession();
@@ -125,6 +183,7 @@ biomarkerService.startSession();
         "text": response,
       });
     });
+    scrollToBottom();
   }
 
   
@@ -150,6 +209,8 @@ biomarkerService.startSession();
 
           Expanded(
             child: ListView.builder(
+              controller:
+              scrollController,
               padding:
                   const EdgeInsets.all(
                 18,
@@ -326,15 +387,53 @@ biomarkerService.startSession();
           ],
         ),
 
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 16,
-            color: isUser
-                ? Colors.white
-                : Colors.black87,
-          ),
-        ),
+        child: MarkdownBody(
+
+  data: text,
+
+  styleSheet:
+      MarkdownStyleSheet(
+
+    p: TextStyle(
+      fontSize: 16,
+      color: isUser
+          ? Colors.white
+          : Colors.black87,
+    ),
+
+    strong: TextStyle(
+      fontWeight:
+          FontWeight.bold,
+      color: isUser
+          ? Colors.white
+          : Colors.black,
+    ),
+
+    h1: TextStyle(
+      fontSize: 22,
+      fontWeight:
+          FontWeight.bold,
+      color: isUser
+          ? Colors.white
+          : Colors.black,
+    ),
+
+    h2: TextStyle(
+      fontSize: 20,
+      fontWeight:
+          FontWeight.bold,
+      color: isUser
+          ? Colors.white
+          : Colors.black,
+    ),
+
+    listBullet: TextStyle(
+      color: isUser
+          ? Colors.white
+          : Colors.black,
+    ),
+  ),
+),
       ),
     );
   }

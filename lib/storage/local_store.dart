@@ -8,6 +8,8 @@ class LocalStore {
   /* ================= CURRENT USER ================= */
 
   static const currentUserKey = "current_user";
+  static const languageKey =
+    "selected_language";
 
   static Future<void> setCurrentUser(String userId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -18,6 +20,34 @@ class LocalStore {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(currentUserKey);
   }
+
+  static Future<void>
+    setLanguage(
+  String language,
+) async {
+
+  final prefs =
+      await SharedPreferences
+          .getInstance();
+
+  await prefs.setString(
+    languageKey,
+    language,
+  );
+}
+
+static Future<String>
+    getLanguage() async {
+
+  final prefs =
+      await SharedPreferences
+          .getInstance();
+
+  return prefs.getString(
+        languageKey,
+      ) ??
+      "English";
+}
 
   /* ================= MEMORY ================= */
 
@@ -697,7 +727,125 @@ static Future<List<int>>
       .map(int.parse)
       .toList();
 }
+static Future<
+    List<Map<String, dynamic>>>
+    getVigilanceResults(
+  String userId,
+) async {
 
+  final hits =
+      await getVigilanceHits(
+    userId,
+  );
+
+  final misses =
+      await getVigilanceMisses(
+    userId,
+  );
+
+  final reaction =
+      await getVigilanceReactionTimes(
+    userId,
+  );
+
+  final List<Map<String, dynamic>>
+      result = [];
+
+  for (int i = 0;
+      i < hits.length;
+      i++) {
+
+    result.add({
+
+      "hits":
+          i < hits.length
+              ? hits[i]
+              : 0,
+
+      "misses":
+          i < misses.length
+              ? misses[i]
+              : 0,
+
+      "reaction":
+          i < reaction.length
+              ? reaction[i]
+              : 0,
+    });
+  }
+
+  return result;
+}
+
+static Future<
+    List<Map<String, dynamic>>>
+    getSerialSubtractionResults(
+  String userId,
+) async {
+
+  final correct =
+      await getSerialSubtractionCorrect(
+    userId,
+  );
+
+  final errors =
+      await getSerialSubtractionErrors(
+    userId,
+  );
+
+  final List<Map<String, dynamic>>
+      result = [];
+
+  for (int i = 0;
+      i < correct.length;
+      i++) {
+
+    result.add({
+
+      "correct":
+          i < correct.length
+              ? correct[i]
+              : 0,
+
+      "errors":
+          i < errors.length
+              ? errors[i]
+              : 0,
+    });
+  }
+
+  return result;
+}
+
+static Future<List<int>>
+    getVisuospatialScores(
+  String userId,
+) async {
+
+  final errors =
+      await getVisuospatialErrors(
+    userId,
+  );
+
+  
+
+  List<int> scores = [];
+
+  for (int i = 0;
+      i < errors.length;
+      i++) {
+
+    final score =
+        max(
+      0,
+      10 - errors[i],
+    );
+
+    scores.add(score);
+  }
+
+  return scores;
+}
 /* ================= SPEECH ================= */
 
 static String speechPauseKey(

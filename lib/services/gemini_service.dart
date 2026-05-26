@@ -1,14 +1,10 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart'
     as http;
 
 class GeminiService {
 
-  static final apiKey =
-    dotenv.env[
-        "OPENROUTER_API_KEY"] ??
-    "";
+  static const apiKey = "";
 
   static Future<String>
       sendMessage(
@@ -44,7 +40,17 @@ class GeminiService {
             "role": "system",
 
             "content":
-                "You are NeuroSense AI, a compassionate cognitive health and caregiver assistant.",
+                """
+You are NeuroSense AI, a compassionate cognitive health and caregiver assistant.
+
+IMPORTANT:
+- Reply in the SAME language as the user's message.
+- If the language is unclear, reply in simple English.
+- Support English, Tamil, Hindi, Telugu, Malayalam, and Kannada.
+- Keep responses simple, supportive, elderly-friendly, and concise.
+- Do not provide medical diagnosis.
+"""
+              
           },
 
           {

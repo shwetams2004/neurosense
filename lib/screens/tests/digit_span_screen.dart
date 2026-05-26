@@ -2,20 +2,26 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../localization/app_strings.dart';
 import '../../storage/local_store.dart';
 
-class DigitSpanScreen extends StatefulWidget {
+class DigitSpanScreen
+    extends StatefulWidget {
+
   const DigitSpanScreen({
     super.key,
   });
 
   @override
-  State<DigitSpanScreen> createState() =>
-      _DigitSpanScreenState();
+  State<DigitSpanScreen>
+      createState() =>
+          _DigitSpanScreenState();
 }
 
 class _DigitSpanScreenState
-    extends State<DigitSpanScreen> {
+    extends State<
+        DigitSpanScreen> {
+
   final Random _random = Random();
 
   final TextEditingController
@@ -30,27 +36,61 @@ class _DigitSpanScreenState
 
   bool testFinished = false;
 
+  bool saving = false;
+
   int maxSpanAchieved = 0;
 
-  bool saving = false;
+  int currentRound = 1;
+
+  static const int totalRounds = 3;
+
+  int correctAnswers = 0;
+
+  int wrongAnswers = 0;
+
+  String currentLanguage =
+      "English";
 
   @override
   void initState() {
+
     super.initState();
+
+    loadLanguage();
 
     generateDigits();
   }
 
+  Future<void> loadLanguage()
+      async {
+
+    currentLanguage =
+        await LocalStore
+            .getLanguage();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+
     inputController.dispose();
 
     super.dispose();
   }
 
+  // =========================
+  // GENERATE DIGITS
+  // =========================
+
   void generateDigits() {
+
     currentDigits = List.generate(
+
       currentSpan,
+
       (_) => _random.nextInt(9) + 1,
     );
 
@@ -59,69 +99,105 @@ class _DigitSpanScreenState
     inputController.clear();
 
     Future.delayed(
-      const Duration(seconds: 3),
+
+      const Duration(
+        seconds: 3,
+      ),
+
       () {
+
         if (!mounted) return;
 
         setState(() {
+
           showingDigits = false;
         });
       },
     );
   }
 
-  Future<void> submitAnswer() async {
-
-  if (saving) return;
-
-  FocusScope.of(context).unfocus();
-
-  final userInput =
-      inputController.text
-          .replaceAll(" ", "");
-
-  final correct =
-      currentDigits.join("");
-
-  bool endTest = false;
-
   // =========================
-  // CORRECT ANSWER
+  // SUBMIT ANSWER
   // =========================
 
-  if (userInput == correct) {
+  Future<void> submitAnswer()
+      async {
 
-    maxSpanAchieved =
-        currentSpan;
+    if (saving ||
+        testFinished) {
+      return;
+    }
 
-    currentSpan++;
+    FocusScope.of(context)
+        .unfocus();
 
-  }
+    final userInput =
+        inputController.text
+            .replaceAll(
+              " ",
+              "",
+            );
 
-  // =========================
-  // WRONG ANSWER
-  // =========================
+    final correct =
+        currentDigits.join("");
 
-  else {
+    // =====================
+    // CORRECT
+    // =====================
 
-    endTest = true;
-  }
+    if (userInput == correct) {
 
-  // =========================
-  // MAX LIMIT REACHED
-  // =========================
+      correctAnswers++;
 
-  if (currentSpan > 5) {
-    endTest = true;
+      maxSpanAchieved =
+          currentSpan;
+
+      currentSpan++;
+    }
+
+    // =====================
+    // WRONG
+    // =====================
+
+    else {
+
+      wrongAnswers++;
+    }
+
+    // =====================
+    // TEST FINISHED
+    // =====================
+
+    if (currentRound >=
+        totalRounds) {
+
+      await finishTest();
+
+      return;
+    }
+
+    // =====================
+    // NEXT ROUND
+    // =====================
+
+    currentRound++;
+
+    generateDigits();
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   // =========================
   // FINISH TEST
   // =========================
 
-  if (endTest) {
+  Future<void> finishTest()
+      async {
 
     setState(() {
+
       saving = true;
     });
 
@@ -129,112 +205,161 @@ class _DigitSpanScreenState
         await LocalStore
             .getCurrentUser();
 
-    if (currentUser == null) {
+    if (currentUser != null) {
 
-      if (!mounted) return;
+      await LocalStore
+          .saveDigitSpanScore(
 
-      setState(() {
-        saving = false;
-      });
+        currentUser,
 
-      return;
+        maxSpanAchieved,
+      );
     }
-
-    await LocalStore
-        .saveDigitSpanScore(
-      currentUser,
-      maxSpanAchieved,
-    );
 
     if (!mounted) return;
 
     setState(() {
-      testFinished = true;
+
       saving = false;
+
+      testFinished = true;
     });
-
-    return;
   }
 
   // =========================
-  // NEXT ROUND
+  // BUILD
   // =========================
-
-  generateDigits();
-
-  if (mounted) {
-    setState(() {});
-  }
-}
 
   @override
   Widget build(
       BuildContext context) {
+
     return Scaffold(
+
       resizeToAvoidBottomInset:
           true,
+
       appBar: AppBar(
-        title: const Text(
-          "Digit Span Activity",
+
+        title: Text(
+
+          AppStrings.text(
+            "digit_span_title",
+            currentLanguage,
+          ),
         ),
       ),
+
       body: SafeArea(
+
         child: Padding(
+
           padding:
               const EdgeInsets.all(
             24,
           ),
+
           child: testFinished
+
               ? _resultView()
+
               : _testView(),
         ),
       ),
     );
   }
 
+  // =========================
+  // TEST VIEW
+  // =========================
+
   Widget _testView() {
+
     return SingleChildScrollView(
+
       child: Column(
+
         crossAxisAlignment:
             CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
 
-          const Text(
-            "Remember the numbers in the same order.",
-            style: TextStyle(
+        children: [
+
+          const SizedBox(
+            height: 20,
+          ),
+
+          Text(
+
+            "${AppStrings.text(
+  "round",
+  currentLanguage,
+)} $currentRound / $totalRounds",
+
+            style:
+                const TextStyle(
+              fontSize: 18,
+              fontWeight:
+                  FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(
+            height: 24,
+          ),
+
+          Text(
+
+            AppStrings.text(
+              "digit_instruction",
+              currentLanguage,
+            ),
+
+            style:
+                const TextStyle(
               fontSize: 18,
             ),
+
             textAlign:
                 TextAlign.center,
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(
+            height: 32,
+          ),
 
           if (showingDigits)
+
             Container(
+
               width:
                   double.infinity,
+
               padding:
                   const EdgeInsets.all(
                 18,
               ),
+
               decoration:
                   BoxDecoration(
+
                 border: Border.all(
                   color:
                       Colors.grey,
                 ),
+
                 borderRadius:
                     BorderRadius
                         .circular(
                   12,
                 ),
               ),
+
               child: Text(
+
                 currentDigits.join(
                   " ",
                 ),
+
                 style:
                     const TextStyle(
                   fontSize: 30,
@@ -242,32 +367,48 @@ class _DigitSpanScreenState
                       FontWeight
                           .bold,
                 ),
+
                 textAlign:
                     TextAlign.center,
               ),
             )
+
           else
+
             Column(
+
               children: [
+
                 TextField(
+
                   controller:
                       inputController,
+
                   keyboardType:
                       TextInputType
                           .number,
+
                   textInputAction:
                       TextInputAction
                           .done,
+
                   onSubmitted:
                       (_) async {
+
                     await submitAnswer();
                   },
+
                   decoration:
-                      const InputDecoration(
+                      InputDecoration(
+
                     border:
-                        OutlineInputBorder(),
+                        const OutlineInputBorder(),
+
                     hintText:
-                        "Enter numbers",
+                        AppStrings.text(
+                      "your_answer",
+                      currentLanguage,
+                    ),
                   ),
                 ),
 
@@ -276,31 +417,43 @@ class _DigitSpanScreenState
                 ),
 
                 SizedBox(
+
                   width:
                       double.infinity,
+
                   height: 52,
+
                   child:
                       ElevatedButton(
+
                     onPressed:
                         saving
                             ? null
                             : () async {
+
                                 await submitAnswer();
                               },
+
                     child: saving
+
                         ? const SizedBox(
-                            height:
-                                22,
-                            width:
-                                22,
+
+                            height: 22,
+                            width: 22,
+
                             child:
                                 CircularProgressIndicator(
                               strokeWidth:
                                   2,
                             ),
                           )
-                        : const Text(
-                            "Submit",
+
+                        : Text(
+
+                            AppStrings.text(
+                              "submit",
+                              currentLanguage,
+                            ),
                           ),
                   ),
                 ),
@@ -311,16 +464,28 @@ class _DigitSpanScreenState
     );
   }
 
+  // =========================
+  // RESULT VIEW
+  // =========================
+
   Widget _resultView() {
+
     return Center(
+
       child: Column(
+
         mainAxisAlignment:
             MainAxisAlignment
                 .center,
+
         children: [
+
           const Icon(
+
             Icons.check_circle,
-            size: 70,
+
+            size: 72,
+
             color: Colors.green,
           ),
 
@@ -328,9 +493,15 @@ class _DigitSpanScreenState
             height: 24,
           ),
 
-          const Text(
-            "Activity completed",
-            style: TextStyle(
+          Text(
+
+            AppStrings.text(
+              "test_completed",
+              currentLanguage,
+            ),
+
+            style:
+                const TextStyle(
               fontSize: 24,
               fontWeight:
                   FontWeight.bold,
@@ -338,11 +509,16 @@ class _DigitSpanScreenState
           ),
 
           const SizedBox(
-            height: 16,
+            height: 24,
           ),
 
           Text(
-            "Maximum span achieved: $maxSpanAchieved",
+
+            "${AppStrings.text(
+              "correct_answer",
+              currentLanguage,
+            )}: $correctAnswers",
+
             style:
                 const TextStyle(
               fontSize: 18,
@@ -350,16 +526,40 @@ class _DigitSpanScreenState
           ),
 
           const SizedBox(
-            height: 16,
+            height: 8,
           ),
 
-          const Text(
-            "Your responses have been recorded.",
-            style: TextStyle(
-              fontSize: 16,
+          Text(
+
+            "${AppStrings.text(
+  "wrong_answers",
+  currentLanguage,
+)}: $wrongAnswers",
+
+            style:
+                const TextStyle(
+              fontSize: 18,
             ),
+          ),
+
+          const SizedBox(
+            height: 8,
+          ),
+
+          Text(
+
+            "${AppStrings.text(
+              "score",
+              currentLanguage,
+            )}: $maxSpanAchieved",
+
             textAlign:
                 TextAlign.center,
+
+            style:
+                const TextStyle(
+              fontSize: 18,
+            ),
           ),
 
           const SizedBox(
@@ -367,18 +567,25 @@ class _DigitSpanScreenState
           ),
 
           SizedBox(
+
             width: 220,
+
             child:
                 ElevatedButton(
-              onPressed: () {
-                Navigator.pop(
-                  context,
-                );
-              },
-              child: const Text(
-                "Return to Home",
-              ),
-            ),
+
+  onPressed: () {
+
+    Navigator.pop(context);
+  },
+
+  child: Text(
+
+    AppStrings.text(
+      "return_home",
+      currentLanguage,
+    ),
+  ),
+),
           ),
         ],
       ),
